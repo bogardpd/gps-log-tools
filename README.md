@@ -62,4 +62,6 @@ The GPS devices I use the most often are plugged into a car for power; when the 
 
 For GPX files which have a speed associated with each trackpoint, this script looks through each track for the first time a rolling median of speeds exceeds a certain threshold, and removes the points before that.
 
+<img src="img/trim.animated.png" width="800">
+
 Note that when using this script during an import, it’s important to record the first trackpoint’s timestamp before running this script, as the first trackpoint could be removed.
