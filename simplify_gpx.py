@@ -136,7 +136,6 @@ if __name__ == "__main__":
         dest='gpx_file',
         help="GPX file to simplify",
     )
-    # add epsilon
     parser.add_argument('--epsilon', '-e',
         dest='epsilon',
         default=DEFAULT_EPSILON,
