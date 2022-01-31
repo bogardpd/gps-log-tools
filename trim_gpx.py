@@ -10,7 +10,10 @@ from pathlib import Path
 
 ROLLING_WINDOW = 5
 SPEED_THRESHOLD = 0.4 # m/s
-SPEED_TAG = '{http://bad-elf.com/xmlschemas/GpxExtensionsV1}speed'
+SPEED_TAGS = [
+    '{http://bad-elf.com/xmlschemas/GpxExtensionsV1}speed',
+    '{http://bad-elf.com/xmlschemas}speed'
+]
 
 def main(args):
     print(f"Trimming {args.gpx_file}.")
@@ -34,6 +37,7 @@ def main(args):
 
 def trim_gpx(gpx):
     """Trims points from all track segments in GPX data."""
+    
     for tn, track in enumerate(gpx.tracks):
         for sn, segment in enumerate(track.segments):
             original_point_count = len(segment.points)
@@ -46,21 +50,37 @@ def trim_gpx(gpx):
     
     return gpx
 
+
 def trim_start(trackpoints):
     """Removes points at start of a segment before movement begins."""
-    speed_list = [
-        {e.tag: e.text for e in point.extensions}.get(SPEED_TAG)
-        for point in trackpoints
-    ]
     
+    # Build dataframe.
+    speed_list = [get_speed(point) for point in trackpoints]
     speed_df = pd.DataFrame(speed_list, columns=['speed'])
     speed_df['rolling'] = speed_df['speed'] \
         .rolling(ROLLING_WINDOW).median()
+    
     # Find the row where the rolling median exceeds the threshold.
     start = speed_df[speed_df['rolling'] >= SPEED_THRESHOLD].index[0]
+
     # Move half the median earlier to find where movement started.
     start = max(start - math.floor(ROLLING_WINDOW/2), 0)
+
     return trackpoints[start:]
+
+
+def get_speed(point):
+    """Gets a waypoint's speed. Returns None if no speed."""
+    
+    # Build dictionary of extensions.
+    ext_dict = {e.tag: e.text for e in point.extensions}
+    
+    # Search for a speed tag.
+    for tag in SPEED_TAGS:
+        tag_text = ext_dict.get(tag)
+        if tag_text is not None:
+            return float(tag_text)
+    return None
 
 
 if __name__ == "__main__":
