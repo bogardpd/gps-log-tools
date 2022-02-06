@@ -21,7 +21,8 @@ $UTCTime = $Time.ToUniversalTime().ToString("yyyyMMddTHHmmZ")
 Write-Host "Copying Current.gpx from Garmin to GPX Archive ..."
 
 # $SourcePath = "DriveSmart 50\Internal Storage\GPX\Current.gpx"
-$SourcePath = "Garmin DriveSmart 55\Internal Storage\GPX\Current.gpx"
+# $SourcePath = "Garmin DriveSmart 55\Internal Storage\GPX\Current.gpx"
+$SourcePath = "Garmin DriveSmart 66\Internal Storage\GPX\Current.gpx"
 $SourcePathArray = $SourcePath -split "\\"
 
 $Shell = New-Object -ComObject Shell.Application
@@ -38,7 +39,7 @@ Write-Host "...done."
 
 
 # Import GPX with Python script.
-python .\scripts\update_kml.py ".\raw\garmin\$($UTCTime).gpx"
+python C:\Users\paulb\version_controlled\gps-log-tools\update_kml.py ".\raw\garmin\$($UTCTime).gpx"
 
 
 # pause # Not needed, since Python script already pauses.
