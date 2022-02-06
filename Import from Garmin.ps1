@@ -39,7 +39,7 @@ Write-Host "...done."
 
 
 # Import GPX with Python script.
-python C:\Users\paulb\version_controlled\gps-log-tools\update_kml.py ".\raw\garmin\$($UTCTime).gpx"
+python C:\Users\paulb\version_controlled \gps-log-tools\update_kml.py ".\raw\garmin\$($UTCTime).gpx"
 
 
 # pause # Not needed, since Python script already pauses.
