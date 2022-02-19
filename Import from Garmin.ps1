@@ -20,9 +20,9 @@ $UTCTime = $Time.ToUniversalTime().ToString("yyyyMMddTHHmmZ")
 
 Write-Host "Copying Current.gpx from Garmin to GPX Archive ..."
 
-# $SourcePath = "DriveSmart 50\Internal Storage\GPX\Current.gpx"
 # $SourcePath = "Garmin DriveSmart 55\Internal Storage\GPX\Current.gpx"
-$SourcePath = "Garmin DriveSmart 66\Internal Storage\GPX\Current.gpx"
+# $SourcePath = "Garmin DriveSmart 66\Internal Storage\GPX\Current.gpx"
+$SourcePath = "DriveSmart 50\Internal Storage\GPX\Current.gpx"
 $SourcePathArray = $SourcePath -split "\\"
 
 $Shell = New-Object -ComObject Shell.Application
