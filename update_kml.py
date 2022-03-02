@@ -35,7 +35,7 @@ NSMAP = {None: "http://www.opengis.net/kml/2.2"}
 
 def update_kml(gpx_files = []):
     shutil.copy(CANONICAL_KML_FILE, CANONICAL_BACKUP_FILE)
-    print(f"Backed up canonical data to {CANONICAL_BACKUP_FILE}.")
+    print(f"Backed up canonical data to \"{CANONICAL_BACKUP_FILE}\".")
 
     kml_dict = kml_to_dict(CANONICAL_KML_FILE)
 
@@ -48,7 +48,7 @@ def update_kml(gpx_files = []):
         tracks_dict = merge_tracks(kml_dict, gpx_flattened)
     else:
         # No GPX file was provided; just refresh canonical KML.
-        print("No GPX file was provided. Refreshing canonical KML…")
+        print("No GPX file was provided. Refreshing canonical KML...")
         tracks_dict = kml_dict
     
     export_kml(tracks_dict, CANONICAL_KML_FILE, False, False)
@@ -92,7 +92,7 @@ def export_kml(kml_dict, output_file, zipped=False, merge_folder_tracks=False):
         return pm
 
     filetype = "KMZ" if zipped else "KML"
-    print(f"Creating {filetype} file…")
+    print(f"Creating {filetype} file...")
 
     style = KML.Style(
         KML.LineStyle(
@@ -167,7 +167,7 @@ def export_kml(kml_dict, output_file, zipped=False, merge_folder_tracks=False):
             xml_declaration=True,
             encoding='utf-8',
         )
-    print(f"Saved {filetype} to {output_file}!")
+    print(f"Saved {filetype} to \"{output_file}\"!")
 
 
 def gpx_to_dict(gpx_file):
@@ -177,7 +177,7 @@ def gpx_to_dict(gpx_file):
     values. Any tracks or track segments in IGNORE_FILE will not be
     included in the dictionary.
     """
-    print(f"Reading GPX from `{gpx_file}`…")
+    print(f"Reading GPX from \"{gpx_file}\"...")
     with open(gpx_file, 'r') as f:
         gpx = gpxpy.parse(f)
 
@@ -205,7 +205,7 @@ def gpx_to_dict(gpx_file):
 
     def merge_segments(segments, index=0):
         """ Merges segments with small time gaps. """
-        print("Merging segments…")
+        print("Merging segments...")
         segments = segments.copy()
         if index + 1 == len(segments):
             return segments
@@ -224,7 +224,7 @@ def gpx_to_dict(gpx_file):
 
     track_dict = {}
     for track in gpx.tracks:
-        print(f"Converting track `{track.name}`…")
+        print(f"Converting track \"{track.name}\"...")
         desc = track.description
         track.segments = filter_segments(track.segments)
         if gpx_config['merge_segments']['enabled']:
@@ -239,7 +239,7 @@ def gpx_to_dict(gpx_file):
             
             # Trim excess points from beginning of track segment.
             if gpx_config['trim']['enabled']:
-                print(f"Trimming segment {sn+1}/{len(track.segments)}…")
+                print(f"Trimming segment {sn+1}/{len(track.segments)}...")
                 original_point_count = len(segment.points)
                 segment.points = trim_start(segment.points)
                 diff = original_point_count - len(segment.points)
@@ -247,7 +247,7 @@ def gpx_to_dict(gpx_file):
 
             # Simplify track segment.
             if gpx_config['simplify']['enabled']:
-                print(f"Simplifying segment {sn+1}/{len(track.segments)}…")
+                print(f"Simplifying segment {sn+1}/{len(track.segments)}...")
                 epsilon = gpx_config['simplify']['epsilon']
                 print(f"\tOriginal: {len(segment.points)} points")
                 segment.points = rdp_spherical(segment.points, epsilon)
@@ -273,7 +273,7 @@ def kml_to_dict(kml_file):
     keys and descriptions/coordinates (lists of (lon,lat,ele) tuples) as
     values. Can contain one level of subfolders as subdictionaries.
     """
-    print(f"Reading KML from {kml_file}…")
+    print(f"Reading KML from \"{kml_file}\"...")
 
     def placemarks_to_dict(node):
         """Parses all Placemark children of the node into a dict."""
@@ -321,7 +321,7 @@ def merge_tracks(existing_tracks, new_tracks):
     are already in existing tracks will not be overwritten by new
     tracks.
     """
-    print("Merging new tracks into existing tracks…")
+    print("Merging new tracks into existing tracks...")
 
     def flatten_keys(tracks):
         keys = set()
@@ -367,6 +367,7 @@ if __name__ == "__main__":
             "file is refreshed without importing anything."
         )
     )
+    parser.add_argument('--nopause', dest='nopause', action='store_true')
     args = parser.parse_args()
     try:
         update_kml(args.gpx_files)
@@ -374,4 +375,5 @@ if __name__ == "__main__":
         print(sys.exc_info()[0])
         print(traceback.format_exc())
     finally:
-        os.system("pause")
+        if not args.nopause:
+            os.system("pause")
