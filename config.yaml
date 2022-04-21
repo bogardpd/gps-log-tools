@@ -5,6 +5,7 @@ folders:
   import_root: "~/OneDrive/Import/"
   raw:
     bad_elf: "raw/bad_elf"
+    mytracks: "raw/mytracks"
 
 files:
   canonical_kml: "driving_canonical.kml"
@@ -18,6 +19,7 @@ timestamps:
   kml_name: "%Y-%m-%d %H:%M:%SZ"
   raw:
     bad_elf: "%Y-%m-%dT%H-%M-%SZ"
+    mytracks: "%Y-%m-%dT%H-%M-%SZ"
 
 
 # IMPORT CONFIGURATION
@@ -53,6 +55,15 @@ import:
         enabled: false
       simplify:
         enabled: false
+    
+    mytracks:
+      merge_segments:
+        enabled: false
+      trim:
+        enabled: false
+      simplify:
+        enabled: true
+        epsilon: 0.000002
 
   # Tracks and track segments to ignore when importing. Tracks and track segments are identified by a UTC timestamp of their first waypoint.
   ignore:

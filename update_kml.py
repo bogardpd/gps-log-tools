@@ -186,6 +186,8 @@ def gpx_to_dict(gpx_file):
         gpx_config = CONFIG['import']['gpx']['bad_elf']
     elif "DriveSmart" in gpx.creator:
         gpx_config = CONFIG['import']['gpx']['garmin']
+    elif "myTracks" in gpx.creator:
+        gpx_config = CONFIG['import']['gpx']['mytracks']
     else:
         gpx_config = CONFIG['import']['gpx']['_default']
 
