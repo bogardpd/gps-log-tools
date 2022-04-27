@@ -8,7 +8,7 @@ import shutil
 import sys
 import traceback
 import yaml
-from datetime import timedelta, timezone
+from datetime import date, time, datetime, timedelta, timezone
 from dateutil.parser import parse, isoparse
 from lxml import etree
 from pathlib import Path
@@ -103,6 +103,22 @@ def export_kml(kml_dict, output_file, zipped=False, merge_folder_tracks=False):
         id='1',
     )
 
+    # Set document timespan to the midnight prior to earliest timestamp
+    # and the midnight following the latest timestamp, so the Google
+    # Earth time slider doesn't exclude the first or last track in some
+    # situations.
+    timestamps = kml_dict.keys()
+    min_time = datetime.combine(
+        min(timestamps), time(0,0,0), tzinfo=timezone.utc
+    )
+    max_time = datetime.combine(
+        max(timestamps), time(0,0,0), tzinfo=timezone.utc
+    ) + timedelta(days=1)
+    timespan = KML.TimeSpan(
+        KML.begin(min_time.isoformat()),
+        KML.end(max_time.isoformat()),
+    )
+
     # Create Folders and Placemarks.
     log_data = []
     for timestamp, values in sorted(kml_dict.items()):
@@ -137,6 +153,7 @@ def export_kml(kml_dict, output_file, zipped=False, merge_folder_tracks=False):
     kml_doc = KML.kml(
         KML.Document(
             KML.name("Driving" if zipped else "driving_canonical"),
+            timespan,
             style,
             *log_data,
         ),
@@ -152,7 +169,7 @@ def export_kml(kml_dict, output_file, zipped=False, merge_folder_tracks=False):
 
     if zipped:
         archive = ZipFile(output_file, 'w', compression=ZIP_DEFLATED)
-        output = io.BytesIO()
+        output = io.BytesIO() 
         etree.ElementTree(kml_doc).write(
             output,
             pretty_print=True,
