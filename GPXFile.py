@@ -14,11 +14,18 @@ class GPXFile:
         with open(input_gpx_file, 'r') as f:
             self.gpx = gpxpy.parse(f)
 
-    def timestamp_filename(self):
-        """Returns a filename from the time of the first waypoint."""
-        first_point_time = min([
+    def __repr__(self) -> str:
+        return f"GPXFile ({self.first_point_time().isoformat()})"
+
+    def first_point_time(self):
+        """Gets the UTC time of the first waypoint."""
+        return min([
             segment.points[0].time.astimezone(timezone.utc)
             for track in self.gpx.tracks
             for segment in track.segments
-        ]).strftime(GPXFile.TIME_FORMAT)
-        return f"{first_point_time}.{GPXFile.SUFFIX}"
+        ])
+
+    def timestamp_filename(self):
+        """Gets a filename from the time of the first waypoint."""
+        filename = self.first_point_time().strftime(GPXFile.TIME_FORMAT)
+        return f"{filename}.{GPXFile.SUFFIX}"
