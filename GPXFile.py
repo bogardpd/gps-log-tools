@@ -15,9 +15,20 @@ class GPXFile:
             self.gpx = gpxpy.parse(f)
         self.start_time = self.__get_start_time()
         self.timestamp_filename = self.__get_timestamp_filename()
+        self.creator = self.__get_creator()
 
     def __repr__(self) -> str:
         return f"GPXFile ({self.start_time.isoformat()})"
+
+    def __get_creator(self):
+        if "Bad Elf" in self.gpx.creator:
+            return 'bad_elf'
+        elif "DriveSmart" in self.gpx.creator:
+            return 'garmin'
+        elif "myTracks" in self.gpx.creator:
+            return 'mytracks'
+        else:
+            return None
 
     def __get_start_time(self):
         """Gets the UTC time of the first waypoint."""
