@@ -7,17 +7,19 @@ from datetime import timezone
 
 class GPXFile:
 
+    ISO_8601_BASIC = "%Y%m%dT%H%M%SZ"
     SUFFIX = "gpx"
-    TIME_FORMAT = "%Y-%m-%dT%H-%M-%SZ"
 
     def __init__(self, input_gpx_file) -> None:
         with open(input_gpx_file, 'r') as f:
             self.gpx = gpxpy.parse(f)
+        self.start_time = self.__get_start_time()
+        self.timestamp_filename = self.__get_timestamp_filename()
 
     def __repr__(self) -> str:
-        return f"GPXFile ({self.first_point_time().isoformat()})"
+        return f"GPXFile ({self.start_time.isoformat()})"
 
-    def first_point_time(self):
+    def __get_start_time(self):
         """Gets the UTC time of the first waypoint."""
         return min([
             segment.points[0].time.astimezone(timezone.utc)
@@ -25,7 +27,7 @@ class GPXFile:
             for segment in track.segments
         ])
 
-    def timestamp_filename(self):
+    def __get_timestamp_filename(self):
         """Gets a filename from the time of the first waypoint."""
-        filename = self.first_point_time().strftime(GPXFile.TIME_FORMAT)
+        filename = self.start_time.strftime(GPXFile.ISO_8601_BASIC)
         return f"{filename}.{GPXFile.SUFFIX}"
