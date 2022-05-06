@@ -16,9 +16,14 @@ class GPXFile:
         self.start_time = self.__get_start_time()
         self.timestamp_filename = self.__get_timestamp_filename()
         self.creator = self.__get_creator()
+        self.__process_tracks()
 
     def __repr__(self) -> str:
-        return f"GPXFile ({self.start_time.isoformat()})"
+        params = ",".join("=".join([k,v]) for k,v in {
+            'start_time': self.start_time.isoformat(),
+            'creator': self.creator,
+        }.items())
+        return f"GPXFile({params})"
 
     def __get_creator(self):
         if "Bad Elf" in self.gpx.creator:
@@ -42,3 +47,31 @@ class GPXFile:
         """Gets a filename from the time of the first waypoint."""
         filename = self.start_time.strftime(GPXFile.ISO_8601_BASIC)
         return f"{filename}.{GPXFile.SUFFIX}"
+
+    def __process_tracks(self):
+        self.tracks = []
+        for trk in self.gpx.tracks:
+            for trkseg in trk.segments:
+                self.tracks.append(Track(trkseg))
+
+
+class Track:
+    """A collection of GPS trackpoints forming a line."""
+
+    def __init__(self, trkseg) -> None:
+        """Converts a gpxpy trkseg into a common Track object."""
+        self.start_time = trkseg.points[0].time.astimezone(timezone.utc)
+        self.points = trkseg.points
+
+    def __repr__(self) -> str:
+        return f"Track(start_time={self.start_time.isoformat()})"
+
+
+# Test track:
+if __name__ == "__main__":
+    from pathlib import Path
+    from pprint import pprint
+    sample = Path.home()/"OneDrive"/"Transfer"/"2022-05-04 18_16_05.gpx"
+    gf = GPXFile(sample)
+    pprint(gf)
+    pprint(gf.tracks)
