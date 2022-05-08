@@ -19,7 +19,7 @@ from trim_gpx import trim_start
 from zipfile import ZipFile, ZIP_DEFLATED
 
 # This script will generate both a KML file (to act as the canonical
-# storage for driving data in a human readible format) and a KMZ file
+# storage for driving data in a human readable format) and a KMZ file
 # with additional processing (e.g. merging tracks in folders). The KML
 # file will be read when merging new data.
 
@@ -270,7 +270,7 @@ def gpx_to_dict(gpx_file):
                 epsilon = gpx_config['simplify']['epsilon']
                 print(f"\tOriginal: {len(segment.points)} points")
                 segment.points = rdp_spherical(segment.points, epsilon)
-                print(f"\tSimplilfied: {len(segment.points)} points")
+                print(f"\tSimplified: {len(segment.points)} points")
 
             coords = list(
                 (p.longitude, p.latitude) for p in segment.points
