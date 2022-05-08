@@ -57,14 +57,41 @@ class GPXFile:
 
 class Track:
     """A collection of GPS trackpoints forming a line."""
+    SPEED_TAGS = [
+        '{http://mytracks.stichling.info/myTracksGPX/1/0}speed',
+        '{http://bad-elf.com/xmlschemas/GpxExtensionsV1}speed',
+        '{http://bad-elf.com/xmlschemas}speed',
+    ]
 
     def __init__(self, trkseg) -> None:
         """Converts a gpxpy trkseg into a common Track object."""
         self.start_time = trkseg.points[0].time.astimezone(timezone.utc)
-        self.points = trkseg.points
+        self.points = [self.__parse_gpx_trkpt(p) for p in trkseg.points]
 
     def __repr__(self) -> str:
         return f"Track(start_time={self.start_time.isoformat()})"
+
+    def __parse_gpx_trkpt(self, trkpt):
+        """Converts GPX trkpt into dict of point attributes."""
+        # Build dictionary of extensions.
+        ext_dict = {e.tag: e.text for e in trkpt.extensions}
+
+        return {
+            'time': trkpt.time.astimezone(timezone.utc),
+            'latitude': trkpt.latitude,
+            'longitude': trkpt.longitude,
+            'elevation': trkpt.elevation,
+            'speed': self.__get_speed(ext_dict),
+            # 'ext': ext_dict,
+        }
+
+    def __get_speed(self, ext_dict):
+        """Finds a speed attribute in a trkpt's extensions."""
+        for tag in Track.SPEED_TAGS:
+            tag_text = ext_dict.get(tag)
+            if tag_text is not None:
+                return float(tag_text)
+        return None
 
 
 # Test track:
@@ -74,4 +101,4 @@ if __name__ == "__main__":
     sample = Path.home()/"OneDrive"/"Transfer"/"2022-05-04 18_16_05.gpx"
     gf = GPXFile(sample)
     pprint(gf)
-    pprint(gf.tracks)
+    pprint(gf.tracks[0].points[0:11])
