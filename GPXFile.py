@@ -58,6 +58,7 @@ class GPXFile:
 class Track:
     """A collection of GPS trackpoints forming a line."""
     SPEED_TAGS = [
+        '{http://www.garmin.com/xmlschemas/TrackPointExtension/v2}speed',
         '{http://mytracks.stichling.info/myTracksGPX/1/0}speed',
         '{http://bad-elf.com/xmlschemas/GpxExtensionsV1}speed',
         '{http://bad-elf.com/xmlschemas}speed',
@@ -81,16 +82,21 @@ class Track:
             'latitude': trkpt.latitude,
             'longitude': trkpt.longitude,
             'elevation': trkpt.elevation,
-            'speed': self.__get_speed(ext_dict),
-            # 'ext': ext_dict,
+            'speed': self.__get_speed(trkpt.extensions),
+            # 'ext': trkpt.extensions,
         }
 
-    def __get_speed(self, ext_dict):
+    def __get_speed(self, extensions):
         """Finds a speed attribute in a trkpt's extensions."""
-        for tag in Track.SPEED_TAGS:
-            tag_text = ext_dict.get(tag)
-            if tag_text is not None:
-                return float(tag_text)
+        for e in extensions:
+            # Check if the extension is a speed tag.
+            if e.tag in Track.SPEED_TAGS and e.text is not None:
+                return float(e.text)
+            # Search the extension's tree for a speed tag.
+            for s in Track.SPEED_TAGS:
+                speed = e.find(s)
+                if speed is not None and speed.text is not None:
+                    return float(speed.text)
         return None
 
 
@@ -98,7 +104,12 @@ class Track:
 if __name__ == "__main__":
     from pathlib import Path
     from pprint import pprint
-    sample = Path.home()/"OneDrive"/"Transfer"/"2022-05-04 18_16_05.gpx"
-    gf = GPXFile(sample)
+    sample_loc = Path.home()/"OneDrive"/"Projects"/"Maps"/"GPS"/"Auto"/"sample"
+    sample = {
+        'mytracks': sample_loc/"mytracks.gpx",
+        'garmin': sample_loc/"garmin-50LMTHD.gpx",
+    }
+    gf = GPXFile(sample['garmin'])
+    # gf = GPXFile(sample['mytracks'])
     pprint(gf)
-    pprint(gf.tracks[0].points[0:11])
+    pprint(gf.tracks[0].points[0:5])
