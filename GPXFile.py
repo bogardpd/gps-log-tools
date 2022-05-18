@@ -16,7 +16,6 @@ class GPXFile:
     def __init__(self, input_gpx_file) -> None:
         with open(input_gpx_file, 'r') as f:
             self.gpx = gpxpy.parse(f)
-            print(self.gpx)
         self.start_time = self.__get_start_time()
         self.timestamp_filename = self.__get_timestamp_filename()
         self.creator = self.__get_creator()
@@ -80,7 +79,7 @@ class GPXFile:
     def trkseg_start(trkseg):
         """Gets the time of the first point of a GPX trkseg."""
         return trkseg.points[0].time.astimezone(timezone.utc)
-        
+
 
 class Track:
     """A collection of GPS trackpoints forming a line."""
@@ -108,8 +107,6 @@ class Track:
 
     def __parse_gpx_trkpt(self, trkpt):
         """Converts GPX trkpt into dict of point attributes."""
-        # Build dictionary of extensions.
-        ext_dict = {e.tag: e.text for e in trkpt.extensions}
 
         return {
             'time': trkpt.time.astimezone(timezone.utc),
