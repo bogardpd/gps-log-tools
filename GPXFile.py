@@ -19,8 +19,8 @@ class GPXFile:
         self.start_time = self.__get_start_time()
         self.timestamp_filename = self.__get_timestamp_filename()
         self.creator = self.__get_creator()
+        self.__processed_tracks = None
         self.__load_ignored()
-        self.__process_tracks()
 
     def __repr__(self) -> str:
         params = ",".join("=".join([k,v]) for k,v in {
@@ -62,16 +62,22 @@ class GPXFile:
         return f"{filename}.{GPXFile.SUFFIX}"
 
     def __process_tracks(self):
-        """Creates a list of Tracks."""
-        self.tracks = []
+        """Attempts to clean up GPX tracks."""
+        self.__processed_tracks = []
         for trk in self.gpx.tracks:
             if GPXFile.trk_start(trk) in self.ignored_trk:
                 continue
             for trkseg in trk.segments:
                 if GPXFile.trkseg_start(trkseg) in self.ignored_trkseg:
                     continue
-                self.tracks.append(Track(trkseg, self.creator))
+                self.__processed_tracks.append(Track(trkseg, self.creator))
 
+    def get_processed_tracks(self):
+        """Returns list of processed Tracks."""
+        if self.__processed_tracks is None:
+            self.__process_tracks()
+        return self.__processed_tracks
+    
     def trk_start(trk):
         """Gets the time of the first point of a GPX trk."""
         return trk.segments[0].points[0].time.astimezone(timezone.utc)
@@ -150,7 +156,7 @@ if __name__ == "__main__":
     }
     # gf = GPXFile(sample['garmin'])
     gf = GPXFile(sample['mytracks'])
-    pprint(gf)
+    pprint(gf.get_processed_tracks())
     # pprint(gf.tracks[0].points[0:5])
     # pprint(gf.ignored_trk)
     # pprint(gf.ignored_trkseg)
