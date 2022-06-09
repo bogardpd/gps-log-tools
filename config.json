@@ -1,0 +1,48 @@
+{
+  "profiles": {
+    "_default": {
+      "merge_segments": {
+        "enabled": false
+      },
+      "trim": {
+        "enabled": false
+      },
+      "simplify": {
+        "enabled": false
+      }
+    },
+    "Bad Elf": {
+      "merge_segments": {
+        "enabled": false
+      },
+      "trim": {
+        "enabled": true
+      },
+      "simplify": {
+        "enabled": true
+      }
+    },
+    "Garmin": {
+      "merge_segments": {
+        "enabled": true
+      },
+      "trim": {
+        "enabled": false
+      },
+      "simplify": {
+        "enabled": false
+      }
+    },
+    "myTracks": {
+      "merge_segments": {
+        "enabled": false
+      },
+      "trim": {
+        "enabled": false
+      },
+      "simplify": {
+        "enabled": true
+      }
+    }
+  }
+}

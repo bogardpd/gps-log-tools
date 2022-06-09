@@ -2,6 +2,7 @@
 Represents an instance of a GPX file's data.
 """
 
+import profile
 import gpxpy
 import json
 from datetime import timezone
@@ -11,33 +12,37 @@ class GPXFile:
 
     ISO_8601_BASIC = "%Y%m%dT%H%M%SZ"
     SUFFIX = "gpx"
+    CONFIG_FILE = "config.json"
     IGNORE_FILE = "ignore.json"
 
     def __init__(self, input_gpx_file) -> None:
         with open(input_gpx_file, 'r') as f:
             self.gpx = gpxpy.parse(f)
+        with open(Path(__file__).parent / GPXFile.CONFIG_FILE, 'r') as f:
+            self.__config = json.load(f)
         self.start_time = self.__get_start_time()
         self.timestamp_filename = self.__get_timestamp_filename()
-        self.creator = self.__get_creator()
+        self.creator = self.gpx.creator
+        self.profile = self.__get_profile()
         self.__processed_tracks = None
         self.__load_ignored()
 
     def __repr__(self) -> str:
         params = ",".join("=".join([k,v]) for k,v in {
             'start_time': self.start_time.isoformat(),
-            'creator': self.creator,
+            'profile': self.profile,
         }.items())
         return f"GPXFile({params})"
 
-    def __get_creator(self):
+    def __get_profile(self):
         if "Bad Elf" in self.gpx.creator:
-            return 'bad_elf'
+            return "Bad Elf"
         elif "DriveSmart" in self.gpx.creator:
-            return 'garmin'
+            return "Garmin"
         elif "myTracks" in self.gpx.creator:
-            return 'mytracks'
+            return "myTracks"
         else:
-            return None
+            return "_default"
 
     def __load_ignored(self):
         try:
@@ -63,14 +68,22 @@ class GPXFile:
 
     def __process_tracks(self):
         """Attempts to clean up GPX tracks."""
+        profile_config = self.__config['profiles'][self.profile]
+        print(profile_config)
         self.__processed_tracks = []
         for trk in self.gpx.tracks:
             if GPXFile.trk_start(trk) in self.ignored_trk:
                 continue
+            if profile_config['merge_segments']['enabled']:
+                print("TODO: Merge Segments")
             for trkseg in trk.segments:
                 if GPXFile.trkseg_start(trkseg) in self.ignored_trkseg:
                     continue
-                self.__processed_tracks.append(Track(trkseg, self.creator))
+                if profile_config['trim']['enabled']:
+                    print("TODO: Trim")
+                if profile_config['simplify']['enabled']:
+                    print("TODO: Simplify")
+                self.__processed_tracks.append(Track(trkseg, self.profile))
 
     def get_processed_tracks(self):
         """Returns list of processed Tracks."""
@@ -90,21 +103,21 @@ class GPXFile:
 class Track:
     """A collection of GPS trackpoints forming a line."""
     SPEED_TAGS = {
-        'garmin': [
+        'Garmin': [
             '{http://www.garmin.com/xmlschemas/TrackPointExtension/v2}speed',
         ],
-        'mytracks': [
+        'myTracks': [
             '{http://mytracks.stichling.info/myTracksGPX/1/0}speed',
         ],
-        'bad_elf': [
+        'Bad Elf': [
             '{http://bad-elf.com/xmlschemas/GpxExtensionsV1}speed',
             '{http://bad-elf.com/xmlschemas}speed',
         ],
     }
 
-    def __init__(self, trkseg, creator) -> None:
+    def __init__(self, trkseg, profile) -> None:
         """Converts a gpxpy trkseg into a common Track object."""
-        self.creator = creator
+        self.profile = profile
         self.start_time = trkseg.points[0].time.astimezone(timezone.utc)
         self.points = [self.__parse_gpx_trkpt(p) for p in trkseg.points]
 
@@ -125,17 +138,17 @@ class Track:
 
     def __get_speed(self, extensions):
         """Finds a speed attribute in a trkpt's extensions."""
-        if self.creator == 'garmin':
-            speed = extensions[0].find(Track.SPEED_TAGS['garmin'][0])
-        elif self.creator == 'mytracks':
+        if self.profile == 'Garmin':
+            speed = extensions[0].find(Track.SPEED_TAGS['Garmin'][0])
+        elif self.profile == 'myTracks':
             speed = next((
                 e for e in extensions
-                if e.tag == Track.SPEED_TAGS['mytracks'][0]
+                if e.tag == Track.SPEED_TAGS['myTracks'][0]
             ), None)
-        elif self.creator == 'bad_elf':
+        elif self.profile == 'Bad Elf':
             speed = next((
                 e for e in extensions
-                if e.tag in Track.SPEED_TAGS['bad_elf']
+                if e.tag in Track.SPEED_TAGS['Bad Elf']
             ), None)
         else:
             return None
@@ -151,11 +164,14 @@ if __name__ == "__main__":
     from pprint import pprint
     sample_loc = Path.home()/"OneDrive"/"Projects"/"Maps"/"GPS"/"Auto"/"sample"
     sample = {
+        'bad_elf': sample_loc/"bad_elf.gpx",
         'mytracks': sample_loc/"mytracks.gpx",
         'garmin': sample_loc/"garmin-50LMTHD.gpx",
     }
+    gf = GPXFile(sample['bad_elf'])
     # gf = GPXFile(sample['garmin'])
-    gf = GPXFile(sample['mytracks'])
+    # gf = GPXFile(sample['mytracks'])
+    pprint(gf)
     pprint(gf.get_processed_tracks())
     # pprint(gf.tracks[0].points[0:5])
     # pprint(gf.ignored_trk)
