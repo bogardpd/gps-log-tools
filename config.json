@@ -24,7 +24,8 @@
     },
     "Garmin": {
       "merge_segments": {
-        "enabled": true
+        "enabled": true,
+        "max_gap_seconds": 600
       },
       "trim": {
         "enabled": false

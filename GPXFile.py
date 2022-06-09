@@ -2,10 +2,9 @@
 Represents an instance of a GPX file's data.
 """
 
-import profile
 import gpxpy
 import json
-from datetime import timezone
+from datetime import timedelta, timezone
 from dateutil.parser import isoparse
 
 class GPXFile:
@@ -66,16 +65,41 @@ class GPXFile:
         filename = self.start_time.strftime(GPXFile.ISO_8601_BASIC)
         return f"{filename}.{GPXFile.SUFFIX}"
 
+    def __merge_segments(self, segments, index=0):
+        """ Merges segments with small time gaps. """        
+        segments = segments.copy()
+        if index + 1 == len(segments):
+            return segments
+        a,b = segments[index:index+2]
+        try:
+            timediff = b.points[0].time - a.points[-1].time
+            profile_config = self.__config['profiles'][self.profile]
+            max_gap = profile_config['merge_segments']['max_gap_seconds']
+            if timediff <= timedelta(seconds=max_gap):
+                a.points.extend(b.points)
+                del segments[index+1]
+                return self.__merge_segments(segments, index=index)
+            else:
+                return self.__merge_segments(segments, index=index+1)
+        except AttributeError:
+            return segments
+
     def __process_tracks(self):
         """Attempts to clean up GPX tracks."""
         profile_config = self.__config['profiles'][self.profile]
-        print(profile_config)
         self.__processed_tracks = []
         for trk in self.gpx.tracks:
             if GPXFile.trk_start(trk) in self.ignored_trk:
                 continue
+            
             if profile_config['merge_segments']['enabled']:
-                print("TODO: Merge Segments")
+                print(f"Merging segments for track \"{trk.name}\"...")
+                orig_len = len(trk.segments)
+                trk.segments = self.__merge_segments(trk.segments)
+                new_len = len(trk.segments)
+                if new_len < orig_len:
+                    print(f"\t{orig_len} → {new_len} segments")
+
             for trkseg in trk.segments:
                 if GPXFile.trkseg_start(trkseg) in self.ignored_trkseg:
                     continue
@@ -168,8 +192,8 @@ if __name__ == "__main__":
         'mytracks': sample_loc/"mytracks.gpx",
         'garmin': sample_loc/"garmin-50LMTHD.gpx",
     }
-    gf = GPXFile(sample['bad_elf'])
-    # gf = GPXFile(sample['garmin'])
+    # gf = GPXFile(sample['bad_elf'])
+    gf = GPXFile(sample['garmin'])
     # gf = GPXFile(sample['mytracks'])
     pprint(gf)
     pprint(gf.get_processed_tracks())
