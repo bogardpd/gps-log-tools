@@ -74,11 +74,22 @@ def export_kml(kml_dict, output_file, zipped=False, merge_folder_tracks=False):
             ) for coord in values['coords']
         )
         pm_name = timestamp.strftime(CONFIG['timestamps']['kml_name'])
+        if values.get('creator'):
+            pm_extdata = KML.ExtendedData(
+                KML.Data(
+                    KML.displayName("Creator"),
+                    KML.value(values.get('creator')),
+                    name='creator',
+                )
+            )
+        else:
+            pm_extdata = None
         if values.get('new'):
             pm_name += " (new)"
         pm = KML.Placemark(
             KML.name(pm_name),
             pm_desc,
+            pm_extdata,
             KML.TimeStamp(
                 KML.when(timestamp.isoformat())
             ),
@@ -280,6 +291,7 @@ def gpx_to_dict(gpx_file):
                 track_dict[timestamp] = dict(
                     coords=coords,
                     description=desc,
+                    creator=gpx.creator,
                     new=True,
                 )
 
@@ -300,6 +312,11 @@ def kml_to_dict(kml_file):
         for p in node.findall('Placemark', NSMAP):
             timestamp = parse(p.find('TimeStamp/when', NSMAP).text)
             timestamp = timestamp.astimezone(timezone.utc)
+            creator_tag = p.find("ExtendedData/Data[@name='creator']", NSMAP)
+            if creator_tag is None:
+                creator = None
+            else:
+                creator = creator_tag.find("value", NSMAP).text.strip()
             raw_coords = p.find('LineString/coordinates', NSMAP).text.strip()
             coords = list(
                 tuple(
@@ -313,6 +330,7 @@ def kml_to_dict(kml_file):
                 output_dict[timestamp] = dict(
                     coords=coords,
                     description=desc,
+                    creator=creator,
                 )
         return output_dict
 
