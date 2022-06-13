@@ -145,7 +145,12 @@ def export_kml(kml_dict, output_file, zipped=False, merge_folder_tracks=False):
                     for ft, fv in sorted(values.items())
                     for track_coords in fv['coords']
                 ]
-                track_values = {'coords': coords, 'description': None}
+                creator = sorted(values.items())[0][1].get('creator')
+                track_values = {
+                    'coords': coords,
+                    'creator': creator,
+                    'description': None
+                }
                 log_data.append(dict_to_placemark(timestamp, track_values))
             else:
                 # Create a folder of LineStrings.
