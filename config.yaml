@@ -18,8 +18,8 @@ files:
 timestamps:
   kml_name: "%Y-%m-%d %H:%M:%SZ"
   raw:
-    bad_elf: "%Y-%m-%dT%H-%M-%SZ"
-    mytracks: "%Y-%m-%dT%H-%M-%SZ"
+    bad_elf: "%Y%m%dT%H%M%SZ"
+    mytracks: "%Y%m%dT%H%M%SZ"
 
 
 # IMPORT CONFIGURATION
