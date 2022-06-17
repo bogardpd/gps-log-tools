@@ -145,7 +145,8 @@ def export_kml(kml_dict, output_file, zipped=False, merge_folder_tracks=False):
                     for ft, fv in sorted(values.items())
                     for track_coords in fv['coords']
                 ]
-                creator = sorted(values.items())[0][1].get('creator')
+                sorted_tracks = [t[1] for t in sorted(values.items())]
+                creator = sorted_tracks[0].get('creator')
                 track_values = {
                     'coords': coords,
                     'creator': creator,
