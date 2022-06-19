@@ -33,6 +33,17 @@ OUTPUT_KMZ_FILE = AUTO_ROOT / CONFIG['files']['output_kmz']
 
 NSMAP = {None: "http://www.opengis.net/kml/2.2"}
 
+
+class DrivingTrack:
+    """An instance of a driving log track."""
+    def __init__(self, id_timestamp) -> None:
+        self.timestamp = id_timestamp # Starting timestamp is used as id
+        self.coords = []
+        self.creator = None
+        self.description = None
+        self.new = False
+
+
 def update_kml(gpx_files = []):
     shutil.copy(CANONICAL_KML_FILE, CANONICAL_BACKUP_FILE)
     print(f"Backed up canonical data to \"{CANONICAL_BACKUP_FILE}\".")
