@@ -1,7 +1,6 @@
 """Updates canonical KML file and imports GPX if provided."""
 
 import argparse
-from re import T
 import gpxpy
 import io
 import os
