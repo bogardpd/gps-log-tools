@@ -35,6 +35,238 @@ OUTPUT_KMZ_FILE = AUTO_ROOT / CONFIG['files']['output_kmz']
 NSMAP = {None: "http://www.opengis.net/kml/2.2"}
 
 
+class DrivingLog:
+    """Manages a collection of driving tracks."""
+    def __init__(self) -> None:
+        self.tracks = []
+        self.CANONICAL_BACKUP_FILE = CANONICAL_BACKUP_FILE
+        self.CANONICAL_KML_FILE = CANONICAL_KML_FILE
+        self.OUTPUT_KMZ_FILE = OUTPUT_KMZ_FILE
+
+    def backup(self):
+        """Backs up the canonical logfile."""
+        shutil.copy(self.CANONICAL_KML_FILE, self.CANONICAL_BACKUP_FILE)
+        print(f"Backed up canonical data to \"{CANONICAL_BACKUP_FILE}\".")
+
+    def export_kml(self, output_file, zipped=False, merge_folder_tracks=False):
+        """
+        Exports KML data to a KML (if zipped=False) or KMZ file located
+        at output_file. Will merge LineStrings within a Folder into a
+        single root-level LineString if merge_folder_tracks is set.
+        """
+
+        def dict_to_placemark(track):
+            """Converts a timestamp and coordinates to a Placemark."""
+            pm_desc = (
+                KML.description(track.description) if track.description
+                else None
+            )
+            coord_str = " ".join(
+                ",".join(
+                    str(t) for t in coord[0:2] # Remove altitude if present
+                ) for coord in track.coords
+            )
+            pm_name = track.timestamp.strftime(CONFIG['timestamps']['kml_name'])
+            if track.creator:
+                pm_extdata = KML.ExtendedData(
+                    KML.Data(
+                        KML.displayName("Creator"),
+                        KML.value(track.creator),
+                        name='creator',
+                    )
+                )
+            else:
+                pm_extdata = None
+            if track.is_new:
+                pm_name += " (new)"
+            pm = KML.Placemark(
+                KML.name(pm_name),
+                pm_desc,
+                pm_extdata,
+                KML.TimeStamp(
+                    KML.when(track.timestamp.isoformat())
+                ),
+                KML.styleUrl("#1"),
+                KML.altitudeMode("clampToGround"),
+                KML.tessellate(1),
+                KML.LineString(
+                    KML.coordinates(coord_str),
+                ),
+            )
+            return pm
+
+        filetype = "KMZ" if zipped else "KML"
+        print(f"Creating {filetype} file...")
+
+        style = KML.Style(
+            KML.LineStyle(
+                KML.color("ff0000ff" if zipped else "ffff00ff"),
+                KML.colorMode("normal"),
+                KML.width(4),
+            ),
+            id='1',
+        )
+
+        time_range = self.get_time_range()
+        timespan = KML.TimeSpan(
+            KML.begin(time_range[0].isoformat()),
+            KML.end(time_range[1].isoformat()),
+        )
+
+        # Create Folders and Placemarks.
+        log_data = []
+        for log_element in self.tracks:
+            if isinstance(log_element, list):
+                # This is a folder.
+                folder_tracks = log_element     
+                if merge_folder_tracks:
+                    # Merge all folder tracks into a single LineString.
+                    track = DrivingTrack(folder_tracks[0].timestamp)
+                    track.coords = [
+                        track_coords
+                        for f in folder_tracks
+                        for track_coords in f.coords
+                    ]
+                    track.creator = folder_tracks[0].creator
+                    track.description = folder_tracks[0].description
+                    log_data.append(dict_to_placemark(track))
+                else:
+                    # Create a folder of LineStrings.
+                    folder_linestrings = [
+                        dict_to_placemark(track)
+                        for track in folder_tracks
+                    ]
+                    folder = KML.Folder(
+                        KML.name(folder_tracks[0].timestamp.strftime(
+                            CONFIG['timestamps']['kml_name']
+                        )),
+                        *folder_linestrings
+                    )
+                    log_data.append(folder)
+            else:
+                # This is a track; create a LineString.
+                log_data.append(dict_to_placemark(log_element))
+
+        kml_doc = KML.kml(
+            KML.Document(
+                KML.name("Driving" if zipped else "driving_canonical"),
+                timespan,
+                style,
+                *log_data,
+            ),
+        )
+
+        set_max_decimal_places(
+            kml_doc,
+            max_decimals={'longitude': 6, 'latitude': 6}
+        )
+
+        output_params = {
+            'pretty_print': True,
+            'xml_declaration': True,
+            'encoding': "utf-8",
+        }
+        if zipped:
+            archive = ZipFile(output_file, 'w', compression=ZIP_DEFLATED)
+            output = io.BytesIO() 
+            etree.ElementTree(kml_doc).write(output, **output_params)
+            archive.writestr("doc.kml", output.getvalue())
+        else:
+            etree.ElementTree(kml_doc).write(str(output_file), **output_params)
+        print(f"Saved {filetype} to \"{output_file}\"!")
+
+    def get_time_range(self):
+        """Returns a (start, end) tuple covering all tracks."""
+        # Get all timestamps.
+        timestamps = []
+        for track in self.tracks:
+            if isinstance(track, list):
+                for subtrack in track:
+                    timestamps.append(subtrack.timestamp)
+            else:
+                timestamps.append(track.timestamp)
+        
+        # Set document timespan to the midnight prior to earliest
+        # timestamp and the midnight following the latest timestamp, so
+        # the Google Earth time slider doesn't exclude the first or last
+        # track in some situations.
+        min_time = datetime.combine(
+            min(timestamps), time(0,0,0), tzinfo=timezone.utc
+        )
+        max_time = datetime.combine(
+            max(timestamps), time(0,0,0), tzinfo=timezone.utc
+        ) + timedelta(days=1)
+        return (min_time, max_time)
+    
+    def load_canonical(self):
+        """Parses the canonical KML file."""
+        print(f"Reading KML from \"{CANONICAL_KML_FILE}\"...")
+
+        def placemarks_to_tracks(node):
+            """
+            Parses all Placemark children of the node into a list of
+            DrivingTracks.
+            """
+            output_tracks = []
+            for p in node.findall('Placemark', NSMAP):
+                timestamp = parse(p.find('TimeStamp/when', NSMAP).text)
+                timestamp = timestamp.astimezone(timezone.utc)
+                track = DrivingTrack(timestamp)
+                creator = p.find("ExtendedData/Data[@name='creator']", NSMAP)
+                if creator is not None:
+                    track.creator = creator.find("value", NSMAP).text.strip()
+                coords = p.find('LineString/coordinates', NSMAP).text.strip()
+                track.coords = list(
+                    tuple(
+                        float(n) for n in c.split(",")[0:2] # Remove altitude
+                    ) for c in coords.split(" ")
+                )
+                desc = p.find("description", NSMAP)
+                if desc is not None:
+                    desc = desc.text.strip()
+                    track.description = desc
+                if len(track.coords) >= CONFIG['import']['min_points']:
+                    output_tracks.append(track)
+            return output_tracks
+
+        root = etree.parse(str(CANONICAL_KML_FILE)).getroot()
+        document = root.find('Document', NSMAP)
+
+        # Parse Document-level Placemarks.
+        track_list = placemarks_to_tracks(document)
+        
+        # Parse Placemarks in Folders.
+        folders = document.findall('Folder', NSMAP)
+        for folder in folders:
+            folder_tracks = placemarks_to_tracks(folder)
+            if len(folder_tracks) > 0:
+                track_list.append(folder_tracks)
+
+        self.tracks.extend(track_list)
+
+    def sort_tracks(self):
+        """Sorts tracks by date (including subfolders)."""
+        
+        # Sort individual subfolders.
+        for i,t in enumerate(self.tracks):
+            if isinstance(t, list):
+                self.tracks[i] = sorted(t, key=lambda x:x.timestamp)
+
+        # Sort root track list.
+        self.tracks = sorted(
+            self.tracks,
+            key=lambda x:DrivingLog.__get_key(x)
+        )
+
+    @classmethod
+    def __get_key(cls, log_element):
+        if isinstance(log_element, list):
+            timestamps = [le.timestamp for le in log_element]
+            return min(timestamps)
+        else:
+            return log_element.timestamp
+
+
 class DrivingTrack:
     """An instance of a driving log track."""
     def __init__(self, id_timestamp) -> None:
@@ -47,44 +279,11 @@ class DrivingTrack:
     def __repr__(self) -> str:
         return f"DrivingTrack({self.timestamp.isoformat()})"
 
-    @classmethod
-    def get_key(cls, track_or_list):
-        if isinstance(track_or_list, list):
-            timestamps = [t.timestamp for t in track_or_list]
-            return min(timestamps)
-        else:
-            return track_or_list.timestamp
-            
-    @classmethod
-    def sort_list(cls, track_list):
-        """Sorts a list of tracks (including sub-lists)."""
-        
-        # Sort individual subfolders.
-        for i,t in enumerate(track_list):
-            if isinstance(t, list):
-                track_list[i] = sorted(t, key=lambda x:x.timestamp)
-        
-        # Sort root track list.
-        return sorted(track_list, key=lambda x:DrivingTrack.get_key(x))
-
-    @classmethod
-    def flatten(cls, track_list):
-        """Returns a flattened track list."""
-        flattened = []
-        for t in track_list:
-            if isinstance(t, list):
-                for st in t:
-                    flattened.append(st)
-            else:
-                flattened.append(t)
-        return flattened
-
 
 def update_kml(gpx_files = []):
-    shutil.copy(CANONICAL_KML_FILE, CANONICAL_BACKUP_FILE)
-    print(f"Backed up canonical data to \"{CANONICAL_BACKUP_FILE}\".")
-
-    kml_dict = kml_to_dict(CANONICAL_KML_FILE)
+    log = DrivingLog()
+    log.backup()
+    log.load_canonical()
 
     if len(gpx_files) > 0:
         # GPX files were provided; parse and merge them.
@@ -92,161 +291,19 @@ def update_kml(gpx_files = []):
         gpx_flattened = {}
         for gd in gpx_dicts:
             gpx_flattened.update(gd)
-        tracks_dict = merge_tracks(kml_dict, gpx_flattened)
+        tracks_dict = merge_tracks(log.tracks, gpx_flattened)
     else:
         # No GPX file was provided; just refresh canonical KML.
         print("No GPX file was provided. Refreshing canonical KML...")
-        tracks_dict = kml_dict
+        # tracks_dict = log.tracks
     
-    export_kml(tracks_dict, CANONICAL_KML_FILE, False, False)
-    export_kml(tracks_dict, OUTPUT_KMZ_FILE, True, True)
-
-
-def export_kml(kml_dict, output_file, zipped=False, merge_folder_tracks=False):
-    """
-    Exports KML data to a KML (if zipped=False) or KMZ file located at
-    output_file. Will merge LineStrings within a Folder into a single
-    root-level LineString if merge_folder_tracks is set.
-    """
-
-    def dict_to_placemark(track):
-        """Converts a timestamp and coordinates to a Placemark."""
-        pm_desc = (
-            KML.description(track.description) if track.description
-            else None
-        )
-        coord_str = " ".join(
-            ",".join(
-                str(t) for t in coord[0:2] # Remove altitude if present
-            ) for coord in track.coords
-        )
-        pm_name = track.timestamp.strftime(CONFIG['timestamps']['kml_name'])
-        if track.creator:
-            pm_extdata = KML.ExtendedData(
-                KML.Data(
-                    KML.displayName("Creator"),
-                    KML.value(track.creator),
-                    name='creator',
-                )
-            )
-        else:
-            pm_extdata = None
-        if track.is_new:
-            pm_name += " (new)"
-        pm = KML.Placemark(
-            KML.name(pm_name),
-            pm_desc,
-            pm_extdata,
-            KML.TimeStamp(
-                KML.when(track.timestamp.isoformat())
-            ),
-            KML.styleUrl("#1"),
-            KML.altitudeMode("clampToGround"),
-            KML.tessellate(1),
-            KML.LineString(
-                KML.coordinates(coord_str),
-            ),
-        )
-        return pm
-
-    filetype = "KMZ" if zipped else "KML"
-    print(f"Creating {filetype} file...")
-
-    style = KML.Style(
-        KML.LineStyle(
-            KML.color("ff0000ff" if zipped else "ffff00ff"),
-            KML.colorMode("normal"),
-            KML.width(4),
-        ),
-        id='1',
+    log.sort_tracks()
+    log.export_kml(
+        log.CANONICAL_KML_FILE, zipped=False, merge_folder_tracks=False
     )
-
-    # Set document timespan to the midnight prior to earliest timestamp
-    # and the midnight following the latest timestamp, so the Google
-    # Earth time slider doesn't exclude the first or last track in some
-    # situations.
-    timestamps = [t.timestamp for t in DrivingTrack.flatten(kml_dict)]
-    min_time = datetime.combine(
-        min(timestamps), time(0,0,0), tzinfo=timezone.utc
+    log.export_kml(
+        log.OUTPUT_KMZ_FILE, zipped=True, merge_folder_tracks=True
     )
-    max_time = datetime.combine(
-        max(timestamps), time(0,0,0), tzinfo=timezone.utc
-    ) + timedelta(days=1)
-    timespan = KML.TimeSpan(
-        KML.begin(min_time.isoformat()),
-        KML.end(max_time.isoformat()),
-    )
-
-    # Create Folders and Placemarks.
-    log_data = []
-    # for timestamp, values in sorted(kml_dict.items()):
-    for t in DrivingTrack.sort_list(kml_dict):
-        if isinstance(t, list):
-            # This is a folder.
-            folder_tracks = t      
-            if merge_folder_tracks:
-                # Merge all folder tracks into a single LineString.
-                track = DrivingTrack(folder_tracks[0].timestamp)
-                track.coords = [
-                    track_coords
-                    for f in folder_tracks
-                    for track_coords in f.coords
-                ]
-                track.creator = folder_tracks[0].creator
-                track.description = folder_tracks[0].description
-                log_data.append(dict_to_placemark(track))
-            else:
-                # Create a folder of LineStrings.
-                folder_linestrings = [
-                    dict_to_placemark(track)
-                    for track in folder_tracks
-                ]
-                folder = KML.Folder(
-                    KML.name(folder_tracks[0].timestamp.strftime(
-                        CONFIG['timestamps']['kml_name']
-                    )),
-                    *folder_linestrings
-                )
-                log_data.append(folder)
-        else:
-            # This is a track; create a LineString.
-            log_data.append(dict_to_placemark(t))
-
-    kml_doc = KML.kml(
-        KML.Document(
-            KML.name("Driving" if zipped else "driving_canonical"),
-            timespan,
-            style,
-            *log_data,
-        ),
-    )
-
-    set_max_decimal_places(
-        kml_doc,
-        max_decimals={
-            'longitude': 6,
-            'latitude': 6,
-        }
-    )
-
-    if zipped:
-        archive = ZipFile(output_file, 'w', compression=ZIP_DEFLATED)
-        output = io.BytesIO() 
-        etree.ElementTree(kml_doc).write(
-            output,
-            pretty_print=True,
-            xml_declaration=True,
-            encoding='utf-8',
-        )
-        archive.writestr("doc.kml", output.getvalue())
-    else:
-        etree.ElementTree(kml_doc).write(
-            str(output_file),
-            pretty_print=True,
-            xml_declaration=True,
-            encoding='utf-8',
-        )
-    print(f"Saved {filetype} to \"{output_file}\"!")
 
 
 def gpx_to_dict(gpx_file):
@@ -349,57 +406,6 @@ def gpx_to_dict(gpx_file):
     return track_dict
 
 
-def kml_to_dict(kml_file):
-    """
-    Reads the supplied KML file and returns a list of DrivingTracks.
-    Can contain one level of subfolders as sub-lists.
-    """
-    print(f"Reading KML from \"{kml_file}\"...")
-
-    def placemarks_to_dict(node):
-        """
-        Parses all Placemark children of the node into a list of
-        DrivingTracks.
-        """
-        output_tracks = []
-        for p in node.findall('Placemark', NSMAP):
-            timestamp = parse(p.find('TimeStamp/when', NSMAP).text)
-            timestamp = timestamp.astimezone(timezone.utc)
-            track = DrivingTrack(timestamp)
-            creator_tag = p.find("ExtendedData/Data[@name='creator']", NSMAP)
-            if creator_tag is not None:
-                track.creator = creator_tag.find("value", NSMAP).text.strip()
-            raw_coords = p.find('LineString/coordinates', NSMAP).text.strip()
-            track.coords = list(
-                tuple(
-                    float(n) for n in c.split(",")[0:2] # Remove altitude
-                ) for c in raw_coords.split(" ")
-            )
-            desc = p.find("description", NSMAP)
-            if desc is not None:
-                desc = desc.text.strip()
-                track.description = desc
-            if len(track.coords) >= CONFIG['import']['min_points']:
-                output_tracks.append(track)
-        return output_tracks
-
-    root = etree.parse(str(kml_file)).getroot()
-    document = root.find('Document', NSMAP)
-
-    # Parse Document-level Placemarks.
-    track_list = placemarks_to_dict(document)
-    
-    # Parse Placemarks in Folders.
-    folders = document.findall('Folder', NSMAP)
-    for folder in folders:
-        folder_tracks = placemarks_to_dict(folder)
-        if len(folder_tracks) > 0:
-            track_list.append(folder_tracks)
-    # pp = pprint.PrettyPrinter(indent=2)
-    # pp.pprint(DrivingTrack.sort_list(track_list))
-    return track_list
-    
-
 def merge_tracks(existing_tracks, new_tracks):
     """
     Merges a new track dict into an existing track dict. Tracks which
@@ -461,4 +467,4 @@ if __name__ == "__main__":
         print(traceback.format_exc())
     finally:
         if not args.nopause:
-            os.system("pause")
+            input("Press Enter to continue... ")
