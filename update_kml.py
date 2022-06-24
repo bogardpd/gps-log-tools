@@ -43,10 +43,12 @@ class DrivingLog:
         self.CANONICAL_KML_FILE = CANONICAL_KML_FILE
         self.OUTPUT_KMZ_FILE = OUTPUT_KMZ_FILE
 
+
     def backup(self):
         """Backs up the canonical logfile."""
         shutil.copy(self.CANONICAL_KML_FILE, self.CANONICAL_BACKUP_FILE)
         print(f"Backed up canonical data to \"{CANONICAL_BACKUP_FILE}\".")
+
 
     def export_kml(self, output_file, zipped=False, merge_folder_tracks=False):
         """
@@ -175,16 +177,11 @@ class DrivingLog:
             etree.ElementTree(kml_doc).write(str(output_file), **output_params)
         print(f"Saved {filetype} to \"{output_file}\"!")
 
+
     def get_time_range(self):
         """Returns a (start, end) tuple covering all tracks."""
         # Get all timestamps.
-        timestamps = []
-        for track in self.tracks:
-            if isinstance(track, list):
-                for subtrack in track:
-                    timestamps.append(subtrack.timestamp)
-            else:
-                timestamps.append(track.timestamp)
+        timestamps = self.get_timestamps()
         
         # Set document timespan to the midnight prior to earliest
         # timestamp and the midnight following the latest timestamp, so
@@ -197,6 +194,43 @@ class DrivingLog:
             max(timestamps), time(0,0,0), tzinfo=timezone.utc
         ) + timedelta(days=1)
         return (min_time, max_time)
+
+
+    def get_timestamps(self):
+        """Returns a list of all track timestamps."""
+        timestamps = []
+        for track in self.tracks:
+            if isinstance(track, list):
+                for subtrack in track:
+                    timestamps.append(subtrack.timestamp)
+            else:
+                timestamps.append(track.timestamp)
+        return timestamps
+
+
+    def import_gpx_files(self, gpx_files):
+        """Imports GPX files and merges them into tracks."""
+        if len(gpx_files) == 0:
+            # No GPX file was provided; just refresh canonical KML.
+            print("No GPX file was provided. Refreshing canonical KML...")
+            return
+       
+        # GPX files were provided; parse and merge them.
+        ignore_trk = [isoparse(dt) for dt in CONFIG['import']['ignore']['trk']]
+        gpx_tracks = {} # Use dict to ensure unique timestamps.
+        for f in gpx_files:
+            file_tracks = self.__gpx_to_tracks(f)
+            for ft in file_tracks:
+                if ft.timestamp not in ignore_trk:
+                    gpx_tracks[ft.timestamp] = ft
+                else:
+                    print(f"Skipping ignored track {ft}.")
+        gpx_tracks = list(gpx_tracks.values())
+
+        # Merge GPX tracks into DrivingLog tracks, keeping original
+        # DrivingLog track if two tracks have the same timestamp.
+        self.__merge_tracks(gpx_tracks)
+        
     
     def load_canonical(self):
         """Parses the canonical KML file."""
@@ -244,6 +278,7 @@ class DrivingLog:
 
         self.tracks.extend(track_list)
 
+
     def sort_tracks(self):
         """Sorts tracks by date (including subfolders)."""
         
@@ -258,6 +293,24 @@ class DrivingLog:
             key=lambda x:DrivingLog.__get_key(x)
         )
 
+
+    def __merge_tracks(self, new_tracks):
+        """
+        Merge new tracks into existing tracks, keeping original track if
+        two tracks have the same timestamp.
+        """
+
+        # Get list of existing driving log track timestamps.
+        log_timestamps = self.get_timestamps()
+
+        # Filter out new tracks that conflict with existing tracks.
+        tracks_to_merge = [
+            x for x in new_tracks if x.timestamp not in log_timestamps
+        ]
+
+        self.tracks.extend(tracks_to_merge)
+
+
     @classmethod
     def __get_key(cls, log_element):
         if isinstance(log_element, list):
@@ -265,6 +318,102 @@ class DrivingLog:
             return min(timestamps)
         else:
             return log_element.timestamp
+
+    
+    @classmethod
+    def __gpx_to_tracks(cls, gpx_file):
+        """Converts a GPX file to a list of Tracks."""
+        print(f"Reading GPX from \"{gpx_file}\"...")
+        with open(gpx_file, 'r') as f:
+            gpx = gpxpy.parse(f)
+
+        # Get creator:
+        if "Bad Elf" in gpx.creator:
+            gpx_config = CONFIG['import']['gpx']['bad_elf']
+        elif "DriveSmart" in gpx.creator:
+            gpx_config = CONFIG['import']['gpx']['garmin']
+        elif "myTracks" in gpx.creator:
+            gpx_config = CONFIG['import']['gpx']['mytracks']
+        else:
+            gpx_config = CONFIG['import']['gpx']['_default']
+
+        ignore_trkseg = [
+            isoparse(dt) for dt in CONFIG['import']['ignore']['trkseg']
+        ]
+
+        def filter_segments(segments):
+            """Removes segments whose first point matches ignore list."""
+            try:
+                return [
+                    seg for seg in segments
+                    if seg.points[0].time not in ignore_trkseg
+                ]
+            except AttributeError:
+                return segments
+
+        def merge_segments(segments, index=0):
+            """ Merges segments with small time gaps. """
+            print("Merging segments...")
+            segments = segments.copy()
+            if index + 1 == len(segments):
+                return segments
+            a,b = segments[index:index+2]
+            try:
+                timediff = b.points[0].time - a.points[-1].time
+                max_seconds = gpx_config['merge_segments']['max_seconds']
+                if timediff <= timedelta(seconds=max_seconds):
+                    a.points.extend(b.points)
+                    del segments[index+1]
+                    return merge_segments(segments, index=index)
+                else:
+                    return merge_segments(segments, index=index+1)
+            except AttributeError:
+                return segments
+        
+        tracks = []
+        for track in gpx.tracks:
+            print(f"Converting track \"{track.name}\"...")
+            desc = track.description
+            track.segments = filter_segments(track.segments)
+            if gpx_config['merge_segments']['enabled']:
+                track.segments = merge_segments(track.segments)
+            
+            for sn, segment in enumerate(track.segments):
+                # Get timestamp before any trimming or simplification.
+                try:
+                    timestamp = segment.points[0].time.astimezone(timezone.utc)
+                except AttributeError:
+                    timestamp = parse(track.name).astimezone(timezone.utc)
+                
+                # Trim excess points from beginning of track segment.
+                if gpx_config['trim']['enabled']:
+                    print(f"Trimming segment {sn+1}/{len(track.segments)}...")
+                    original_point_count = len(segment.points)
+                    segment.points = trim_start(segment.points)
+                    diff = original_point_count - len(segment.points)
+                    print(f"\tRemoved {diff} excess points at start of segment.")
+
+                # Simplify track segment.
+                if gpx_config['simplify']['enabled']:
+                    print(f"Simplifying segment {sn+1}/{len(track.segments)}...")
+                    epsilon = gpx_config['simplify']['epsilon']
+                    print(f"\tOriginal: {len(segment.points)} points")
+                    segment.points = rdp_spherical(segment.points, epsilon)
+                    print(f"\tSimplified: {len(segment.points)} points")
+
+                coords = list(
+                    (p.longitude, p.latitude) for p in segment.points
+                )
+            
+                if len(coords) >= CONFIG['import']['min_points']:
+                    track = DrivingTrack(timestamp)
+                    track.coords = coords
+                    track.description = desc
+                    track.creator = gpx.creator
+                    track.is_new = True
+                    tracks.append(track)
+
+        return tracks
 
 
 class DrivingTrack:
@@ -284,19 +433,7 @@ def update_kml(gpx_files = []):
     log = DrivingLog()
     log.backup()
     log.load_canonical()
-
-    if len(gpx_files) > 0:
-        # GPX files were provided; parse and merge them.
-        gpx_dicts = [gpx_to_dict(gpx_file) for gpx_file in gpx_files]
-        gpx_flattened = {}
-        for gd in gpx_dicts:
-            gpx_flattened.update(gd)
-        tracks_dict = merge_tracks(log.tracks, gpx_flattened)
-    else:
-        # No GPX file was provided; just refresh canonical KML.
-        print("No GPX file was provided. Refreshing canonical KML...")
-        # tracks_dict = log.tracks
-    
+    log.import_gpx_files(gpx_files)
     log.sort_tracks()
     log.export_kml(
         log.CANONICAL_KML_FILE, zipped=False, merge_folder_tracks=False
