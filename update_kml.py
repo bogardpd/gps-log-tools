@@ -26,11 +26,6 @@ from zipfile import ZipFile, ZIP_DEFLATED
 with open(Path(__file__).parent / "config.yaml", 'r') as f:
     CONFIG = yaml.safe_load(f)
 
-AUTO_ROOT = Path(CONFIG['folders']['auto_root']).expanduser()
-CANONICAL_KML_FILE = AUTO_ROOT / CONFIG['files']['canonical_kml']
-CANONICAL_BACKUP_FILE = AUTO_ROOT / CONFIG['files']['canonical_backup']
-OUTPUT_KMZ_FILE = AUTO_ROOT / CONFIG['files']['output_kmz']
-
 NSMAP = {None: "http://www.opengis.net/kml/2.2"}
 
 
@@ -38,9 +33,11 @@ class DrivingLog:
     """Manages a collection of driving tracks."""
     def __init__(self) -> None:
         self.tracks = []
-        self.CANONICAL_BACKUP_FILE = CANONICAL_BACKUP_FILE
-        self.CANONICAL_KML_FILE = CANONICAL_KML_FILE
-        self.OUTPUT_KMZ_FILE = OUTPUT_KMZ_FILE
+
+        root = Path(CONFIG['folders']['auto_root']).expanduser()
+        self.CANONICAL_KML_FILE = root / CONFIG['files']['canonical_kml']
+        self.CANONICAL_BACKUP_FILE = root / CONFIG['files']['canonical_backup']
+        self.OUTPUT_KMZ_FILE = root / CONFIG['files']['output_kmz']
 
         self.ignore = {
             t: [isoparse(dt) for dt in CONFIG['import']['ignore'][t]]
@@ -50,7 +47,7 @@ class DrivingLog:
     def backup(self):
         """Backs up the canonical logfile."""
         shutil.copy(self.CANONICAL_KML_FILE, self.CANONICAL_BACKUP_FILE)
-        print(f"Backed up canonical data to \"{CANONICAL_BACKUP_FILE}\".")
+        print(f"Backed up canonical data to \"{self.CANONICAL_BACKUP_FILE}\".")
 
     def export_kml(self, output_file, zipped=False, merge_folder_tracks=False):
         """
@@ -193,7 +190,7 @@ class DrivingLog:
         
     def load_canonical(self):
         """Parses the canonical KML file."""
-        print(f"Reading KML from \"{CANONICAL_KML_FILE}\"...")
+        print(f"Reading KML from \"{self.CANONICAL_KML_FILE}\"...")
 
         def placemarks_to_tracks(node):
             """
@@ -222,7 +219,7 @@ class DrivingLog:
                     output_tracks.append(track)
             return output_tracks
 
-        root = etree.parse(str(CANONICAL_KML_FILE)).getroot()
+        root = etree.parse(str(self.CANONICAL_KML_FILE)).getroot()
         document = root.find('Document', NSMAP)
 
         # Parse Document-level Placemarks.
@@ -430,7 +427,6 @@ class DrivingTrack:
 
 def update_kml(gpx_files = [], skip_export=False):
     log = DrivingLog()
-    log.backup()
     log.load_canonical()
     log.import_gpx_files(gpx_files)
     log.sort_tracks()
@@ -438,6 +434,7 @@ def update_kml(gpx_files = [], skip_export=False):
     if skip_export:
         print("Skipping export.")
     else:
+        log.backup()
         log.export_kml(
             log.CANONICAL_KML_FILE, zipped=False, merge_folder_tracks=False
         )
