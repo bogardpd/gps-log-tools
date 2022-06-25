@@ -243,7 +243,7 @@ class DrivingLog:
         # Sort root track list.
         self.tracks = sorted(
             self.tracks,
-            key=lambda x:DrivingLog.__get_key(x)
+            key=lambda x:DrivingLog.__log_element_key(x)
         )
 
     def __merge_tracks(self, new_tracks):
@@ -350,7 +350,11 @@ class DrivingLog:
         return tracks
 
     @staticmethod
-    def __get_key(log_element):
+    def __log_element_key(log_element):
+        """
+        Returns the timestamp of a DrivingTrack, or the timestamp of the
+        first track in a list of DrivingTracks.
+        """
         if isinstance(log_element, list):
             timestamps = [le.timestamp for le in log_element]
             return min(timestamps)
