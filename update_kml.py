@@ -43,12 +43,10 @@ class DrivingLog:
         self.CANONICAL_KML_FILE = CANONICAL_KML_FILE
         self.OUTPUT_KMZ_FILE = OUTPUT_KMZ_FILE
 
-
     def backup(self):
         """Backs up the canonical logfile."""
         shutil.copy(self.CANONICAL_KML_FILE, self.CANONICAL_BACKUP_FILE)
         print(f"Backed up canonical data to \"{CANONICAL_BACKUP_FILE}\".")
-
 
     def export_kml(self, output_file, zipped=False, merge_folder_tracks=False):
         """
@@ -137,10 +135,9 @@ class DrivingLog:
             etree.ElementTree(kml_doc).write(str(output_file), **output_params)
         print(f"Saved {filetype} to \"{output_file}\"!")
 
-
     def get_time_range(self):
         """Returns a (start, end) tuple covering all tracks."""
-        # Get all timestamps.
+        
         timestamps = self.get_timestamps()
         
         # Set document timespan to the midnight prior to earliest
@@ -155,7 +152,6 @@ class DrivingLog:
         ) + timedelta(days=1)
         return (min_time, max_time)
 
-
     def get_timestamps(self):
         """Returns a list of all track timestamps."""
         timestamps = []
@@ -166,7 +162,6 @@ class DrivingLog:
             else:
                 timestamps.append(track.timestamp)
         return timestamps
-
 
     def import_gpx_files(self, gpx_files):
         """Imports GPX files and merges them into tracks."""
@@ -191,7 +186,6 @@ class DrivingLog:
         # DrivingLog track if two tracks have the same timestamp.
         self.__merge_tracks(gpx_tracks)
         
-    
     def load_canonical(self):
         """Parses the canonical KML file."""
         print(f"Reading KML from \"{CANONICAL_KML_FILE}\"...")
@@ -238,7 +232,6 @@ class DrivingLog:
 
         self.tracks.extend(track_list)
 
-
     def sort_tracks(self):
         """Sorts tracks by date (including subfolders)."""
         
@@ -252,7 +245,6 @@ class DrivingLog:
             self.tracks,
             key=lambda x:DrivingLog.__get_key(x)
         )
-
 
     def __merge_tracks(self, new_tracks):
         """
@@ -270,7 +262,6 @@ class DrivingLog:
 
         self.tracks.extend(tracks_to_merge)
 
-
     @staticmethod
     def __convert_gpx_to_tracks(gpx_file):
         """Converts a GPX file to a list of Tracks."""
@@ -278,15 +269,7 @@ class DrivingLog:
         with open(gpx_file, 'r') as f:
             gpx = gpxpy.parse(f)
 
-        # Get creator:
-        if "Bad Elf" in gpx.creator:
-            gpx_config = CONFIG['import']['gpx']['bad_elf']
-        elif "DriveSmart" in gpx.creator:
-            gpx_config = CONFIG['import']['gpx']['garmin']
-        elif "myTracks" in gpx.creator:
-            gpx_config = CONFIG['import']['gpx']['mytracks']
-        else:
-            gpx_config = CONFIG['import']['gpx']['_default']
+        gpx_config = DrivingLog.__processing_config(gpx.creator)
 
         ignore_trkseg = [
             isoparse(dt) for dt in CONFIG['import']['ignore']['trkseg']
@@ -374,9 +357,18 @@ class DrivingLog:
         else:
             return log_element.timestamp
 
-    
-    
-
+    @staticmethod
+    def __processing_config(creator):
+        """Parses a creator to determine a processing configuration."""
+        if "Bad Elf" in creator:
+            gpx_config = CONFIG['import']['gpx']['bad_elf']
+        elif "DriveSmart" in creator:
+            gpx_config = CONFIG['import']['gpx']['garmin']
+        elif "myTracks" in creator:
+            gpx_config = CONFIG['import']['gpx']['mytracks']
+        else:
+            gpx_config = CONFIG['import']['gpx']['_default']
+        return gpx_config
 
 class DrivingTrack:
     """An instance of a driving log track."""
@@ -389,7 +381,6 @@ class DrivingTrack:
 
     def __repr__(self) -> str:
         return f"DrivingTrack({self.timestamp.isoformat()})"
-
 
     def get_kml_placemark(self):
         """Returns a KML Placemark for the track."""
