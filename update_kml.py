@@ -179,7 +179,7 @@ class DrivingLog:
         ignore_trk = [isoparse(dt) for dt in CONFIG['import']['ignore']['trk']]
         gpx_tracks = {} # Use dict to ensure unique timestamps.
         for f in gpx_files:
-            file_tracks = self.__gpx_to_tracks(f)
+            file_tracks = self.__convert_gpx_to_tracks(f)
             for ft in file_tracks:
                 if ft.timestamp not in ignore_trk:
                     gpx_tracks[ft.timestamp] = ft
@@ -272,16 +272,7 @@ class DrivingLog:
 
 
     @staticmethod
-    def __get_key(log_element):
-        if isinstance(log_element, list):
-            timestamps = [le.timestamp for le in log_element]
-            return min(timestamps)
-        else:
-            return log_element.timestamp
-
-    
-    @staticmethod
-    def __gpx_to_tracks(gpx_file):
+    def __convert_gpx_to_tracks(gpx_file):
         """Converts a GPX file to a list of Tracks."""
         print(f"Reading GPX from \"{gpx_file}\"...")
         with open(gpx_file, 'r') as f:
@@ -374,6 +365,17 @@ class DrivingLog:
                     tracks.append(track)
 
         return tracks
+
+    @staticmethod
+    def __get_key(log_element):
+        if isinstance(log_element, list):
+            timestamps = [le.timestamp for le in log_element]
+            return min(timestamps)
+        else:
+            return log_element.timestamp
+
+    
+    
 
 
 class DrivingTrack:
