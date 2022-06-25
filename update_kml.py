@@ -107,7 +107,7 @@ class DrivingLog:
                     log_data.append(folder)
             else:
                 # This is a track; create a LineString.
-                log_data.append(track.get_kml_placemark())
+                log_data.append(log_element.get_kml_placemark())
 
         kml_doc = KML.kml(
             KML.Document(
