@@ -3,13 +3,12 @@
 import argparse
 import gpxpy
 import io
-import os
 import pprint
 import shutil
 import sys
 import traceback
 import yaml
-from datetime import date, time, datetime, timedelta, timezone
+from datetime import time, datetime, timedelta, timezone
 from dateutil.parser import parse, isoparse
 from lxml import etree
 from pathlib import Path
@@ -42,6 +41,11 @@ class DrivingLog:
         self.CANONICAL_BACKUP_FILE = CANONICAL_BACKUP_FILE
         self.CANONICAL_KML_FILE = CANONICAL_KML_FILE
         self.OUTPUT_KMZ_FILE = OUTPUT_KMZ_FILE
+
+        self.ignore = {
+            t: [isoparse(dt) for dt in CONFIG['import']['ignore'][t]]
+            for t in ['trk', 'trkseg']
+        }
 
     def backup(self):
         """Backs up the canonical logfile."""
@@ -171,12 +175,13 @@ class DrivingLog:
             return
        
         # GPX files were provided; parse and merge them.
-        ignore_trk = [isoparse(dt) for dt in CONFIG['import']['ignore']['trk']]
         gpx_tracks = {} # Use dict to ensure unique timestamps.
         for f in gpx_files:
-            file_tracks = self.__convert_gpx_to_tracks(f)
+            file_tracks = self.__convert_gpx_to_tracks(
+                f, self.ignore['trkseg']
+            )
             for ft in file_tracks:
-                if ft.timestamp not in ignore_trk:
+                if ft.timestamp not in self.ignore['trk']:
                     gpx_tracks[ft.timestamp] = ft
                 else:
                     print(f"Skipping ignored track {ft}.")
@@ -263,17 +268,13 @@ class DrivingLog:
         self.tracks.extend(tracks_to_merge)
 
     @staticmethod
-    def __convert_gpx_to_tracks(gpx_file):
+    def __convert_gpx_to_tracks(gpx_file, ignore_trkseg=[]):
         """Converts a GPX file to a list of Tracks."""
         print(f"Reading GPX from \"{gpx_file}\"...")
         with open(gpx_file, 'r') as f:
             gpx = gpxpy.parse(f)
 
         gpx_config = DrivingLog.__processing_config(gpx.creator)
-
-        ignore_trkseg = [
-            isoparse(dt) for dt in CONFIG['import']['ignore']['trkseg']
-        ]
 
         def filter_segments(segments):
             """Removes segments whose first point matches ignore list."""
@@ -427,18 +428,22 @@ class DrivingTrack:
         return pm
 
 
-def update_kml(gpx_files = []):
+def update_kml(gpx_files = [], skip_export=False):
     log = DrivingLog()
     log.backup()
     log.load_canonical()
     log.import_gpx_files(gpx_files)
     log.sort_tracks()
-    log.export_kml(
-        log.CANONICAL_KML_FILE, zipped=False, merge_folder_tracks=False
-    )
-    log.export_kml(
-        log.OUTPUT_KMZ_FILE, zipped=True, merge_folder_tracks=True
-    )
+    
+    if skip_export:
+        print("Skipping export.")
+    else:
+        log.export_kml(
+            log.CANONICAL_KML_FILE, zipped=False, merge_folder_tracks=False
+        )
+        log.export_kml(
+            log.OUTPUT_KMZ_FILE, zipped=True, merge_folder_tracks=True
+        )
 
 
 if __name__ == "__main__":
@@ -452,9 +457,10 @@ if __name__ == "__main__":
         )
     )
     parser.add_argument('--nopause', dest='nopause', action='store_true')
+    parser.add_argument('--noexport', dest='noexport', action='store_true')
     args = parser.parse_args()
     try:
-        update_kml(args.gpx_files)
+        update_kml(args.gpx_files, skip_export=args.noexport)
     except BaseException:
         print(sys.exc_info()[0])
         print(traceback.format_exc())
