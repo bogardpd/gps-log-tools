@@ -57,46 +57,6 @@ class DrivingLog:
         single root-level LineString if merge_folder_tracks is set.
         """
 
-        def dict_to_placemark(track):
-            """Converts a timestamp and coordinates to a Placemark."""
-            pm_desc = (
-                KML.description(track.description) if track.description
-                else None
-            )
-            coord_str = " ".join(
-                ",".join(
-                    str(t) for t in coord[0:2] # Remove altitude if present
-                ) for coord in track.coords
-            )
-            pm_name = track.timestamp.strftime(CONFIG['timestamps']['kml_name'])
-            if track.creator:
-                pm_extdata = KML.ExtendedData(
-                    KML.Data(
-                        KML.displayName("Creator"),
-                        KML.value(track.creator),
-                        name='creator',
-                    )
-                )
-            else:
-                pm_extdata = None
-            if track.is_new:
-                pm_name += " (new)"
-            pm = KML.Placemark(
-                KML.name(pm_name),
-                pm_desc,
-                pm_extdata,
-                KML.TimeStamp(
-                    KML.when(track.timestamp.isoformat())
-                ),
-                KML.styleUrl("#1"),
-                KML.altitudeMode("clampToGround"),
-                KML.tessellate(1),
-                KML.LineString(
-                    KML.coordinates(coord_str),
-                ),
-            )
-            return pm
-
         filetype = "KMZ" if zipped else "KML"
         print(f"Creating {filetype} file...")
 
@@ -131,11 +91,11 @@ class DrivingLog:
                     ]
                     track.creator = folder_tracks[0].creator
                     track.description = folder_tracks[0].description
-                    log_data.append(dict_to_placemark(track))
+                    log_data.append(track.get_kml_placemark())
                 else:
                     # Create a folder of LineStrings.
                     folder_linestrings = [
-                        dict_to_placemark(track)
+                        track.get_kml_placemark()
                         for track in folder_tracks
                     ]
                     folder = KML.Folder(
@@ -147,7 +107,7 @@ class DrivingLog:
                     log_data.append(folder)
             else:
                 # This is a track; create a LineString.
-                log_data.append(dict_to_placemark(log_element))
+                log_data.append(track.get_kml_placemark())
 
         kml_doc = KML.kml(
             KML.Document(
@@ -311,8 +271,8 @@ class DrivingLog:
         self.tracks.extend(tracks_to_merge)
 
 
-    @classmethod
-    def __get_key(cls, log_element):
+    @staticmethod
+    def __get_key(log_element):
         if isinstance(log_element, list):
             timestamps = [le.timestamp for le in log_element]
             return min(timestamps)
@@ -320,8 +280,8 @@ class DrivingLog:
             return log_element.timestamp
 
     
-    @classmethod
-    def __gpx_to_tracks(cls, gpx_file):
+    @staticmethod
+    def __gpx_to_tracks(gpx_file):
         """Converts a GPX file to a list of Tracks."""
         print(f"Reading GPX from \"{gpx_file}\"...")
         with open(gpx_file, 'r') as f:
@@ -427,6 +387,47 @@ class DrivingTrack:
 
     def __repr__(self) -> str:
         return f"DrivingTrack({self.timestamp.isoformat()})"
+
+
+    def get_kml_placemark(self):
+        """Returns a KML Placemark for the track."""
+        pm_desc = (
+            KML.description(self.description) if self.description
+            else None
+        )
+        coord_str = " ".join(
+            ",".join(
+                str(t) for t in coord[0:2] # Remove altitude if present
+            ) for coord in self.coords
+        )
+        pm_name = self.timestamp.strftime(CONFIG['timestamps']['kml_name'])
+        if self.creator:
+            pm_extdata = KML.ExtendedData(
+                KML.Data(
+                    KML.displayName("Creator"),
+                    KML.value(self.creator),
+                    name='creator',
+                )
+            )
+        else:
+            pm_extdata = None
+        if self.is_new:
+            pm_name += " (new)"
+        pm = KML.Placemark(
+            KML.name(pm_name),
+            pm_desc,
+            pm_extdata,
+            KML.TimeStamp(
+                KML.when(self.timestamp.isoformat())
+            ),
+            KML.styleUrl("#1"),
+            KML.altitudeMode("clampToGround"),
+            KML.tessellate(1),
+            KML.LineString(
+                KML.coordinates(coord_str),
+            ),
+        )
+        return pm
 
 
 def update_kml(gpx_files = []):
