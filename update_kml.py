@@ -68,7 +68,7 @@ class DrivingLog:
             id='1',
         )
 
-        time_range = self.get_time_range()
+        time_range = self.time_range()
         timespan = KML.TimeSpan(
             KML.begin(time_range[0].isoformat()),
             KML.end(time_range[1].isoformat()),
@@ -135,34 +135,6 @@ class DrivingLog:
         else:
             etree.ElementTree(kml_doc).write(str(output_file), **output_params)
         print(f"Saved {filetype} to \"{output_file}\"!")
-
-    def get_time_range(self):
-        """Returns a (start, end) tuple covering all tracks."""
-        
-        timestamps = self.get_timestamps()
-        
-        # Set document timespan to the midnight prior to earliest
-        # timestamp and the midnight following the latest timestamp, so
-        # the Google Earth time slider doesn't exclude the first or last
-        # track in some situations.
-        min_time = datetime.combine(
-            min(timestamps), time(0,0,0), tzinfo=timezone.utc
-        )
-        max_time = datetime.combine(
-            max(timestamps), time(0,0,0), tzinfo=timezone.utc
-        ) + timedelta(days=1)
-        return (min_time, max_time)
-
-    def get_timestamps(self):
-        """Returns a list of all track timestamps."""
-        timestamps = []
-        for track in self.tracks:
-            if isinstance(track, list):
-                for subtrack in track:
-                    timestamps.append(subtrack.timestamp)
-            else:
-                timestamps.append(track.timestamp)
-        return timestamps
 
     def import_gpx_files(self, gpx_files):
         """Imports GPX files and merges them into tracks."""
@@ -248,6 +220,34 @@ class DrivingLog:
             key=lambda x:DrivingLog.__log_element_key(x)
         )
 
+    def time_range(self):
+        """Returns a (start, end) tuple covering all tracks."""
+        
+        timestamps = self.timestamps()
+        
+        # Set document timespan to the midnight prior to earliest
+        # timestamp and the midnight following the latest timestamp, so
+        # the Google Earth time slider doesn't exclude the first or last
+        # track in some situations.
+        min_time = datetime.combine(
+            min(timestamps), time(0,0,0), tzinfo=timezone.utc
+        )
+        max_time = datetime.combine(
+            max(timestamps), time(0,0,0), tzinfo=timezone.utc
+        ) + timedelta(days=1)
+        return (min_time, max_time)
+
+    def timestamps(self):
+        """Returns a list of all track timestamps."""
+        timestamps = []
+        for track in self.tracks:
+            if isinstance(track, list):
+                for subtrack in track:
+                    timestamps.append(subtrack.timestamp)
+            else:
+                timestamps.append(track.timestamp)
+        return timestamps
+
     def __merge_tracks(self, new_tracks):
         """
         Merge new tracks into existing tracks, keeping original track if
@@ -255,7 +255,7 @@ class DrivingLog:
         """
 
         # Get list of existing driving log track timestamps.
-        log_timestamps = self.get_timestamps()
+        log_timestamps = self.timestamps()
 
         # Filter out new tracks that conflict with existing tracks.
         tracks_to_merge = [
