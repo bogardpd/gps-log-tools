@@ -323,11 +323,15 @@ class DrivingLog:
                     original_point_count = len(segment.points)
                     segment.points = trim_start(segment.points)
                     diff = original_point_count - len(segment.points)
-                    print(f"\tRemoved {diff} excess points at start of segment.")
+                    print(
+                        f"\tRemoved {diff} excess points at start of segment."
+                    )
 
                 # Simplify track segment.
                 if gpx_config['simplify']['enabled']:
-                    print(f"Simplifying segment {sn+1}/{len(track.segments)}...")
+                    print(
+                        f"Simplifying segment {sn+1}/{len(track.segments)}..."
+                    )
                     epsilon = gpx_config['simplify']['epsilon']
                     print(f"\tOriginal: {len(segment.points)} points")
                     segment.points = rdp_spherical(segment.points, epsilon)
