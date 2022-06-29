@@ -3,20 +3,22 @@
 import argparse
 import gpxpy
 import io
-import pprint
 import shutil
 import sys
 import traceback
 import yaml
+
 from datetime import time, datetime, timedelta, timezone
 from dateutil.parser import parse, isoparse
 from lxml import etree
 from pathlib import Path
 from pykml.factory import KML_ElementMaker as KML
 from pykml.helpers import set_max_decimal_places
+from zipfile import ZipFile, ZIP_DEFLATED
+
+from gpx_utilities import gpx_profile
 from simplify_gpx import rdp_spherical
 from trim_gpx import trim_start
-from zipfile import ZipFile, ZIP_DEFLATED
 
 # This script will generate both a KML file (to act as the canonical
 # storage for driving data in a human readable format) and a KMZ file
@@ -366,15 +368,8 @@ class DrivingLog:
     @staticmethod
     def __processing_config(creator):
         """Parses a creator to determine a processing configuration."""
-        if "Bad Elf" in creator:
-            gpx_config = CONFIG['import']['gpx']['bad_elf']
-        elif "DriveSmart" in creator:
-            gpx_config = CONFIG['import']['gpx']['garmin']
-        elif "myTracks" in creator:
-            gpx_config = CONFIG['import']['gpx']['mytracks']
-        else:
-            gpx_config = CONFIG['import']['gpx']['_default']
-        return gpx_config
+        profile = gpx_profile(creator)
+        return CONFIG['import']['gpx'][profile]
 
 class DrivingTrack:
     """An instance of a driving log track."""
