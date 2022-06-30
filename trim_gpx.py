@@ -6,14 +6,25 @@ import argparse
 import gpxpy
 import math
 import pandas as pd
+
 from pathlib import Path
+
+from gpx_utilities import gpx_profile
 
 ROLLING_WINDOW = 5
 SPEED_THRESHOLD = 0.4 # m/s
-SPEED_TAGS = [
-    '{http://bad-elf.com/xmlschemas/GpxExtensionsV1}speed',
-    '{http://bad-elf.com/xmlschemas}speed'
-]
+SPEED_TAGS = {
+    'garmin': [
+        '{http://www.garmin.com/xmlschemas/TrackPointExtension/v2}speed',
+    ],
+    'mytracks': [
+        '{http://mytracks.stichling.info/myTracksGPX/1/0}speed',
+    ],
+    'bad_elf': [
+        '{http://bad-elf.com/xmlschemas/GpxExtensionsV1}speed',
+        '{http://bad-elf.com/xmlschemas}speed',
+    ],
+}
 
 def main(args):
     print(f"Trimming {args.gpx_file}.")
@@ -37,25 +48,29 @@ def main(args):
 
 def trim_gpx(gpx):
     """Trims points from all track segments in GPX data."""
-    
+    profile = gpx_profile(gpx.creator)
+
     for tn, track in enumerate(gpx.tracks):
         for sn, segment in enumerate(track.segments):
             original_point_count = len(segment.points)
             print(f"\tTrimming segment {sn+1}/{len(track.segments)}.")
-            
-            segment.points = trim_start(segment.points)
-            
-            difference = original_point_count - len(segment.points)
-            print(f"\tRemoved {difference} excess points at start of segment.")
+            if len(segment.points) < ROLLING_WINDOW:
+                print("\tNot enough points to perform a trim.")
+            else:
+                segment.points = trim_start(segment.points, profile)
+                diff = original_point_count - len(segment.points)
+                print(
+                    f"\tRemoved {diff} excess points at start of segment."
+                )
     
     return gpx
 
 
-def trim_start(trackpoints):
+def trim_start(trackpoints, profile='_default'):
     """Removes points at start of a segment before movement begins."""
-    
+
     # Build dataframe.
-    speed_list = [get_speed(point) for point in trackpoints]
+    speed_list = [get_speed(point, profile) for point in trackpoints]
     speed_df = pd.DataFrame(speed_list, columns=['speed'])
     speed_df['rolling'] = speed_df['speed'] \
         .rolling(ROLLING_WINDOW).median()
@@ -69,17 +84,23 @@ def trim_start(trackpoints):
     return trackpoints[start:]
 
 
-def get_speed(point):
+def get_speed(point, profile):
     """Gets a waypoint's speed. Returns None if no speed."""
     
-    # Build dictionary of extensions.
-    ext_dict = {e.tag: e.text for e in point.extensions}
+    extensions = point.extensions
+
+    if profile == 'garmin':
+        speed = extensions[0].find(SPEED_TAGS['garmin'][0])
+    elif profile in ['bad_elf', 'mytracks']:
+        speed = next((
+            e for e in extensions
+            if e.tag in SPEED_TAGS[profile]
+        ), None)
+    else:
+        return None
     
-    # Search for a speed tag.
-    for tag in SPEED_TAGS:
-        tag_text = ext_dict.get(tag)
-        if tag_text is not None:
-            return float(tag_text)
+    if speed is not None and speed.text is not None:
+        return float(speed.text)
     return None
 
 
