@@ -323,7 +323,8 @@ class DrivingLog:
                 if gpx_config['trim']['enabled']:
                     print(f"Trimming segment {sn+1}/{len(track.segments)}...")
                     original_point_count = len(segment.points)
-                    segment.points = trim_start(segment.points)
+                    profile = gpx_profile(gpx.creator)
+                    segment.points = trim_start(segment.points, profile)
                     diff = original_point_count - len(segment.points)
                     print(
                         f"\tRemoved {diff} excess points at start of segment."
