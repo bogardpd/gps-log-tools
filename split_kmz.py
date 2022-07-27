@@ -115,4 +115,4 @@ if __name__ == "__main__":
         print(sys.exc_info()[0])
         print(traceback.format_exc())
     finally:
-        os.system("pause")
+        input("Press Enter to continue... ")
