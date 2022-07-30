@@ -18,7 +18,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 from gpx_utilities import gpx_profile
 from simplify_gpx import rdp_spherical
-from trim_gpx import trim_start
+from trim_gpx import trim
 
 # This script will generate both a KML file (to act as the canonical
 # storage for driving data in a human readable format) and a KMZ file
@@ -324,7 +324,7 @@ class DrivingLog:
                     print(f"Trimming segment {sn+1}/{len(track.segments)}...")
                     original_point_count = len(segment.points)
                     profile = gpx_profile(gpx.creator)
-                    segment.points = trim_start(segment.points, profile)
+                    segment.points = trim(segment.points, profile)
                     diff = original_point_count - len(segment.points)
                     print(
                         f"\tRemoved {diff} excess points at start of segment."

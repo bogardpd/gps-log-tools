@@ -12,7 +12,13 @@ from pathlib import Path
 from gpx_utilities import gpx_profile
 
 ROLLING_WINDOW = 5
-SPEED_THRESHOLD = 0.4 # m/s
+# SPEED_THRESHOLD = 0.4 # m/s
+SPEED_THRESHOLD = { # m/s
+    '_default': 0.4,
+    'garmin':   0.4,
+    'mytracks': 4.0,
+    'bad_elf':  0.4,
+}
 SPEED_TAGS = {
     'garmin': [
         '{http://www.garmin.com/xmlschemas/TrackPointExtension/v2}speed',
@@ -57,17 +63,17 @@ def trim_gpx(gpx):
             if len(segment.points) < ROLLING_WINDOW:
                 print("\tNot enough points to perform a trim.")
             else:
-                segment.points = trim_start(segment.points, profile)
+                segment.points = trim(segment.points, profile)
                 diff = original_point_count - len(segment.points)
                 print(
-                    f"\tRemoved {diff} excess points at start of segment."
+                    f"\tRemoved {diff} excess points from ends of segment."
                 )
     
     return gpx
 
 
-def trim_start(trackpoints, profile='_default'):
-    """Removes points at start of a segment before movement begins."""
+def trim(trackpoints, profile='_default'):
+    """Removes no-motion points at start or end of a segment."""
 
     # Build dataframe.
     speed_list = [get_speed(point, profile) for point in trackpoints]
@@ -75,13 +81,17 @@ def trim_start(trackpoints, profile='_default'):
     speed_df['rolling'] = speed_df['speed'] \
         .rolling(ROLLING_WINDOW).median()
     
-    # Find the row where the rolling median exceeds the threshold.
-    start = speed_df[speed_df['rolling'] >= SPEED_THRESHOLD].index[0]
-
+    # Find the first row where the rolling median exceeds the threshold.
+    start = speed_df[speed_df['rolling'] >= SPEED_THRESHOLD[profile]].index[0]
     # Move half the median earlier to find where movement started.
     start = max(start - math.floor(ROLLING_WINDOW/2), 0)
+    
+    # Find the last row where the rolling median exceeds the threshold.
+    end = speed_df[speed_df['rolling'] >= SPEED_THRESHOLD[profile]].index[-1]
+    # Move half the median earlier to find where movement ended.
+    end = max(end - math.floor(ROLLING_WINDOW/2), 0)
 
-    return trackpoints[start:]
+    return trackpoints[start:end]
 
 
 def get_speed(point, profile):
