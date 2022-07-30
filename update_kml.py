@@ -327,7 +327,7 @@ class DrivingLog:
                     segment.points = trim(segment.points, profile)
                     diff = original_point_count - len(segment.points)
                     print(
-                        f"\tRemoved {diff} excess points at start of segment."
+                        f"\tRemoved {diff} excess points from ends of segment."
                     )
 
                 # Simplify track segment.
