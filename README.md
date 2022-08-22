@@ -58,9 +58,9 @@ This script helps me split these old merged KML Placemarks back into GPX tracks.
 
 ### trim_gpx.py
 
-The GPS devices I use the most often are plugged into a car for power; when the car starts, the GPS devices turn on and start recording. When a GPS device is turned on, it may take a small amount of time to lock onto satellites and build up its confidence in its position. Thus, the initial points of the track may jump around a lot, resulting in the start of many tracks looking somewhat like a scribble. Also, the car is often not moving immediately after starting, so a lot of these noisy points may not be needed since the car is sitting still.
+The GPS devices I use the most often are plugged into a car for power; when the car starts, the GPS devices turn on and start recording. When a GPS device is turned on, it may take a small amount of time to lock onto satellites and build up its confidence in its position. Thus, the initial points of the track may jump around a lot, resulting in the start of many tracks looking somewhat like a scribble. Also, the car is often not moving immediately after starting (or may sit for a while when parked before turning off the car), so a lot of the points at the beginning and end of the track may not be needed since the car is sitting still.
 
-For GPX files which have a speed associated with each trackpoint, this script looks through each track for the first time a rolling median of speeds exceeds a certain threshold, and removes the points before that.
+For GPX files which have a speed associated with each trackpoint, this script looks through each track for the first and last times a rolling median of speeds exceeds a certain threshold, and removes the points before the first time and after the last time.
 
 <img src="img/trim.animated.png" width="800">
 
