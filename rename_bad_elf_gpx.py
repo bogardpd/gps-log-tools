@@ -1,4 +1,5 @@
 """Renames Bad Elf GPX files to a common filename timestamp format."""
+import colorama
 import gpxpy
 import yaml
 from datetime import datetime, timezone
@@ -52,7 +53,11 @@ def rename_bad_elf_gpx(gpx_file, dest_folder_path = None):
         new_filepath = dest_folder_path / new_filename
 
     if new_filepath.exists():
-        print(f"`{gpx_file.name} already exists. Skipping this file.")
+        print(
+            colorama.Fore.YELLOW + 
+            f"`{gpx_file.name} already exists. Skipping this file." +
+            colorama.Style.RESET_ALL
+        )
     elif new_filename == gpx_file.name and dest_folder_path is None:
         print(f"`{gpx_file.name} is already in the correct format.")
     else:
