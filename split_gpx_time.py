@@ -26,7 +26,7 @@ def main(args):
         gpx = gpxpy.parse(f)
 
     # Split GPX.
-    gpx_split = split(gpx, args.threshold)
+    gpx_split = split_gpx(gpx, args.threshold)
 
     # Write to new GPX file.
     output_path = (
@@ -37,18 +37,19 @@ def main(args):
     print(f"Saved simplified GPX to {output_path}.")
 
 
-def split(gpx, threshold):
-    """Splits GPX trksegs with time gaps at or above threshold."""
+def split_gpx(gpx, threshold):
+    """Splits all tracks in a GPX file."""
     for tn, track in enumerate(gpx.tracks):
-        print(f"  Processing track {tn+1}/{len(gpx.tracks)}: `{track.name}`.")
-        track.segments = split_track_segments(track.segments, threshold)
+        print(f"Processing track {tn+1}/{len(gpx.tracks)}: `{track.name}`.")
+        track.segments = split_segments(track.segments, threshold)
     return gpx
-    
 
-def split_track_segments(segments, threshold):
+
+def split_segments(segments, threshold):
+    """Splits GPX trksegs with time gaps at or above threshold."""
     updated_trksegs = []
     for sn, segment in enumerate(segments):
-        print(f"    Splitting segment {sn+1}/{len(segments)}.")
+        print(f"  Splitting segment {sn+1}/{len(segments)}.")
         
         # Create a list of point ids just after a large gap.
         gap_enum = enumerate(zip(segment.points[:-1],segment.points[1:]))
@@ -60,7 +61,7 @@ def split_track_segments(segments, threshold):
 
         if len(gaps) == 0:
             updated_trksegs.append(segment)
-            print("      No large gaps found.")
+            print("    No large gaps found.")
         else:
             starts = [0,*gaps.keys()]
             ends = [*gaps.keys(),len(segment.points)+1]
@@ -72,14 +73,14 @@ def split_track_segments(segments, threshold):
             for stsn, sts in enumerate(split_trksegs):
                 if stsn > 0:
                     print(
-                        "      ("
+                        "    ("
                         + colorama.Fore.RED
                         + str(list(gaps.values())[stsn-1])
                         + colorama.Fore.RESET
                         + " gap)"
                     )
                 print(
-                    f"      Split {stsn+1}: "
+                    f"    Split {stsn+1}: "
                     + colorama.Fore.GREEN
                     + str(sts.points[0].time)
                     + colorama.Fore.RESET + " to " + colorama.Fore.GREEN

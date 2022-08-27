@@ -18,7 +18,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 from gpx_utilities import gpx_profile
 from simplify_gpx import rdp_spherical
-from split_gpx_time import split_track_segments
+from split_gpx_time import split_segments
 from trim_gpx import trim
 
 # This script will generate both a KML file (to act as the canonical
@@ -315,12 +315,12 @@ class DrivingLog:
 
             # Split track segment with large time gaps into multiple
             # segments.
-            # if gpx_config['split_segments']['enabled']:
-            #     track.segments = split_track_segments(
-            #         track.segments,
-            #         gpx_config['split_segments']['threshold']
-            #     )
-            
+            if gpx_config['split_segments']['enabled']:
+                track.segments = split_segments(
+                    track.segments,
+                    gpx_config['split_segments']['threshold']
+                )
+
             for sn, segment in enumerate(track.segments):
                 # Get timestamp before any trimming or simplification.
                 try:
@@ -354,12 +354,12 @@ class DrivingLog:
                 )
             
                 if len(coords) >= CONFIG['import']['min_points']:
-                    track = DrivingTrack(timestamp)
-                    track.coords = coords
-                    track.description = desc
-                    track.creator = gpx.creator
-                    track.is_new = True
-                    tracks.append(track)
+                    new_track = DrivingTrack(timestamp)
+                    new_track.coords = coords
+                    new_track.description = desc
+                    new_track.creator = gpx.creator
+                    new_track.is_new = True
+                    tracks.append(new_track)
 
         return tracks
 
