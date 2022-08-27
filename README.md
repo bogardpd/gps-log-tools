@@ -50,6 +50,10 @@ GPX tracks are often recorded at a given frequency (e.g. one waypoint per second
 
 <img src="img/simplify.animated.png" width="800">
 
+### split_gpx_time.py
+
+In some cases, GPX track segments may have large time gaps between points (e.g. if the vehicle is stopped and the GPS logger doesn't record points while not in motion). This script looks for time gaps between subsequent trackpoints within a track segment that are greater than or equal to a set threshold of seconds, and splits the track segment into multiple track segments.
+
 ### split_kmz.py
 
 For a number of years, I kept all my driving data in a separate KMZ file for each trip I took, plus an annual KMZ file for local driving. When I converted the original GPX files into KMZ, I had also merged GPX [tracks](https://www.topografix.com/GPX/1/1/#type_trkType) with multiple [track segments](https://www.topografix.com/GPX/1/1/#type_trksegType) into a single KML [Placemark](https://developers.google.com/kml/documentation/kmlreference#placemark). Unfortunately, I only kept a single timestamp for the whole merged Placemark, and the timestamp was in the track's local timezone, rather than UTC.

@@ -33,6 +33,8 @@ import:
     _default:
       merge_segments:
         enabled: false
+      split_segments:
+        enabled: false
       trim:
         enabled: false
       simplify:
@@ -41,6 +43,9 @@ import:
     bad_elf:
       merge_segments:
         enabled: false
+      split_segments:
+        enabled: true
+        threshold: 600
       trim:
         enabled: true
       simplify:
@@ -51,6 +56,8 @@ import:
       merge_segments:
         enabled: true
         max_seconds: 600
+      split_segments:
+        enabled: false
       trim:
         enabled: false
       simplify:
@@ -58,6 +65,8 @@ import:
     
     mytracks:
       merge_segments:
+        enabled: false
+      split_segments:
         enabled: false
       trim:
         enabled: false
