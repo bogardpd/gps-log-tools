@@ -47,7 +47,9 @@ import:
         enabled: true
         threshold: 600
       trim:
-        enabled: true
+        # Since the Bad Elf device is set to only record above a minimum speed
+        # threshold, trim is not needed.
+        enabled: false
       simplify:
         enabled: true
         epsilon: 0.000002
