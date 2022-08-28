@@ -1,15 +1,15 @@
 # FILES AND FOLDERS
 
 folders:
-  auto_root: "~/OneDrive/Projects/Maps/GPS/Auto"
+  auto_root: "~/OneDrive/Projects/Driving-Logs"
   import_root: "~/OneDrive/Import/"
   raw:
-    bad_elf: "raw/bad_elf"
-    mytracks: "raw/mytracks"
+    bad_elf: "Raw-Data/bad_elf"
+    mytracks: "Raw-Data/mytracks"
 
 files:
   canonical_kml: "driving_canonical.kml"
-  canonical_backup: "./.backup/driving_canonical.backup.kml"
+  canonical_backup: "./.Backup/driving_canonical.backup.kml"
   output_kmz: "Driving.kmz"
 
 
