@@ -55,7 +55,7 @@ def rename_bad_elf_gpx(gpx_file, dest_folder_path = None):
     if new_filepath.exists():
         print(
             colorama.Fore.YELLOW + 
-            f"`{gpx_file.name} already exists. Skipping this file." +
+            f"`{gpx_file.name}` already exists. Skipping this file." +
             colorama.Style.RESET_ALL
         )
     elif new_filename == gpx_file.name and dest_folder_path is None:
