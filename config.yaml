@@ -45,7 +45,7 @@ import:
         enabled: false
       split_segments:
         enabled: true
-        threshold: 600
+        threshold: 300
       trim:
         # Since the Bad Elf device is set to only record above a minimum speed
         # threshold, trim is not needed.
