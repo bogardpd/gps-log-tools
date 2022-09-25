@@ -6,10 +6,11 @@ gap between points exceeds a set threshold.
 import argparse
 import colorama
 import gpxpy
-import pandas as pd
+from tabulate import tabulate
 from pathlib import Path
 
 DEFAULT_THRESHOLD_S = 600
+TIME_FORMAT = "%Y-%m-%d %H:%MZ"
 colorama.init(autoreset=True)
 
 def main(args):
@@ -34,7 +35,7 @@ def main(args):
     )
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(gpx_split.to_xml())
-    print(f"Saved simplified GPX to {output_path}.")
+    print(f"Saved split GPX to {output_path}.")
 
 
 def split_gpx(gpx, threshold):
@@ -70,25 +71,35 @@ def split_segments(segments, threshold):
                 split_trkseg = gpxpy.gpx.GPXTrackSegment()
                 split_trkseg.points = segment.points[s:e]
                 split_trksegs.append(split_trkseg)
+            table = []
             for stsn, sts in enumerate(split_trksegs):
-                if stsn > 0:
-                    print(
-                        "    ("
-                        + colorama.Fore.RED
-                        + str(list(gaps.values())[stsn-1])
-                        + colorama.Fore.RESET
-                        + " gap)"
+                start = sts.points[0].time.strftime(TIME_FORMAT)
+                end = sts.points[-1].time.strftime(TIME_FORMAT)
+                duration = (sts.points[-1].time - sts.points[0].time).seconds
+                drive = duration_str(duration, style=colorama.Fore.GREEN)
+                if stsn < (len(split_trksegs) - 1):
+                    gap = duration_str(
+                        list(gaps.values())[stsn].seconds,
+                        style=colorama.Fore.RED,
                     )
-                print(
-                    f"    Split {stsn+1}: "
-                    + colorama.Fore.GREEN
-                    + str(sts.points[0].time)
-                    + colorama.Fore.RESET + " to " + colorama.Fore.GREEN
-                    + str(sts.points[-1].time)
-                )
+                else:
+                    gap = None
+                table.append([stsn+1, start, drive, end, gap])
+            print(tabulate(table,
+                headers=['Split', 'Start', 'Drive', 'End', 'Break'],
+                stralign='right',
+            ))
             updated_trksegs.extend(split_trksegs)
     return updated_trksegs
 
+def duration_str(seconds, style=None):
+    h, remainder = divmod(seconds, 3600)
+    m, remainder = divmod(remainder, 60)
+    dur_str = f"{h}h:{m:02}m"
+    if style is not None:
+        return style + dur_str + colorama.Style.RESET_ALL
+    else:
+        return dur_str
 
 
 if __name__ == "__main__":
