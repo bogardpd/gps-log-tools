@@ -40,6 +40,10 @@ I’ve had difficulty mounting Garmin devices as directories under recent versio
 
 ## Utility Scripts
 
+### find_outliers.py
+
+Occasionally, points will be recorded which are far outside of a driving track. This script calculates the speed between subsequent pairs of points, and looks for points where the speed from the previous point and to the next point exceeds a certain threshold, indicating that the point is likely an outlier.
+
 ### rename_bad_elf_gpx.py
 
 Bad Elf GPX files are named as a timestamp, but the timestamp string filename format is slightly different depending on whether the GPX files were downloaded directly from the device over USB, or downloaded using the Bad Elf smartphone app over Bluetooth. This script renames the GPX files to a consistent timestamp format. 
