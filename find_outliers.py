@@ -31,18 +31,25 @@ def find_outliers(gpx_file):
             # Distance from previous point in meters:
             points['dist_prev'] = points.apply(lambda r: distance_m(r), axis=1)
             # Time difference from previous point in seconds:
-            points['time_prev'] = points['time'].diff().dt.seconds
+            points['time_prev'] = points['time'].diff().dt.total_seconds()
             # Speed from previous/to next point in meters per second:
             points['speed_prev'] = points['dist_prev'] / points['time_prev']
             points['speed_next'] = points['speed_prev'].shift(-1)
             
             # Find outliers by looking for points where speed from prior
-            # point and speed to next point are both above the speed
+            # point or speed to next point are above the speed
             # threshold.
             outliers = points[
                 (points['speed_prev'] > SPEED_THRESHOLD)
-                & (points['speed_next'] > SPEED_THRESHOLD)
+                | (points['speed_next'] > SPEED_THRESHOLD)
             ]
+            # Find outliers by looking for points where speed from prior
+            # point and speed to next point are both above the speed
+            # threshold.
+            # outliers = points[
+            #     (points['speed_prev'] > SPEED_THRESHOLD)
+            #     & (points['speed_next'] > SPEED_THRESHOLD)
+            # ]
 
             if len(outliers) > 0:
                 print(outliers[DISPLAY_COLS])
