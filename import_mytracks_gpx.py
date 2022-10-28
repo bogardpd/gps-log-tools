@@ -3,14 +3,14 @@ import gpxpy
 import os
 import sys
 import traceback
-import yaml
+import tomli
 from datetime import timezone
 from pathlib import Path
 from zipfile import ZipFile
 from update_kml import update_kml
 
-with open(Path(__file__).parent / "config.yaml", 'r') as f:
-    CONFIG = yaml.safe_load(f)
+with open(Path(__file__).parent / "config.toml", 'rb') as f:
+    CONFIG = tomli.load(f)
 
 AUTO_ROOT = Path(CONFIG['folders']['auto_root']).expanduser()
 IMPORT_ROOT = Path(CONFIG['folders']['import_root']).expanduser()

@@ -3,14 +3,14 @@ import colorama
 import os
 import sys
 import traceback
-import yaml
+import tomli
 from pathlib import Path
 from zipfile import ZipFile
 from rename_bad_elf_gpx import rename_bad_elf_gpx
 from update_kml import update_kml
 
-with open(Path(__file__).parent / "config.yaml", 'r') as f:
-    CONFIG = yaml.safe_load(f)
+with open(Path(__file__).parent / "config.toml", 'rb') as f:
+    CONFIG = tomli.load(f)
 AUTO_ROOT = Path(CONFIG['folders']['auto_root']).expanduser()
 IMPORT_ROOT = Path(CONFIG['folders']['import_root']).expanduser()
 

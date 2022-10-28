@@ -10,7 +10,7 @@ This script is the heart of my GPS processing; it maintains my [canonical drivin
 
 The import function ensures duplicate tracks are not imported (tracks are uniquely identified by the UTC timestamp of their first waypoint). As tracks may have been edited in the canonical KML file after import (see below), in the case of a matching timestamp, the existing track in the canonical KML file is kept and the matching GPX track is ignored.
 
-The import function also does some processing on the GPX data due to the idiosyncrasies of the device that generated the GPS track. Which processing is performed on each device’s tracks is defined in `config.yaml`.
+The import function also does some processing on the GPX data due to the idiosyncrasies of the device that generated the GPS track. Which processing is performed on each device’s tracks is defined in `config.toml`.
 
 Since I’m maintaining several decades of driving data, I want my KML files to be more optimized for size than Google Earth typically saves them as. In particular:
 

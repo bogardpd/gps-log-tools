@@ -1,12 +1,12 @@
 """Renames Bad Elf GPX files to a common filename timestamp format."""
 import colorama
 import gpxpy
-import yaml
+import tomli
 from datetime import datetime, timezone
 from pathlib import Path
 
-with open(Path(__file__).parent / "config.yaml", 'r') as f:
-    CONFIG = yaml.safe_load(f)
+with open(Path(__file__).parent / "config.toml", 'rb') as f:
+    CONFIG = tomli.load(f)
 AUTO_ROOT = Path(CONFIG['folders']['auto_root']).expanduser()
 TIME_FORMAT = CONFIG['timestamps']['raw']['bad_elf']
 
@@ -14,11 +14,13 @@ TIME_FORMAT = CONFIG['timestamps']['raw']['bad_elf']
 def main():
     gpx_path = AUTO_ROOT / CONFIG['folders']['raw']['bad_elf']
     to_rename = [
-        f for f in gpx_path.iterdir()
+        f for f in list(gpx_path.glob("*.gpx"))
         if f.is_file() and not time_format_matches(f.stem, TIME_FORMAT)
     ]
     print(f"Correcting GPX file names in {gpx_path}...")
+
     for f in to_rename:
+        print(f"Renaming {f}")
         rename_bad_elf_gpx(f)
     print(f"{len(to_rename)} file(s) renamed.")
 

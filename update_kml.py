@@ -6,7 +6,7 @@ import io
 import shutil
 import sys
 import traceback
-import yaml
+import tomli
 
 from datetime import time, datetime, timedelta, timezone
 from dateutil.parser import parse, isoparse
@@ -26,8 +26,8 @@ from trim_gpx import trim
 # with additional processing (e.g. merging tracks in folders). The KML
 # file will be read when merging new data.
 
-with open(Path(__file__).parent / "config.yaml", 'r') as f:
-    CONFIG = yaml.safe_load(f)
+with open(Path(__file__).parent / "config.toml", 'rb') as f:
+    CONFIG = tomli.load(f)
 
 NSMAP = {None: "http://www.opengis.net/kml/2.2"}
 
@@ -42,11 +42,8 @@ class DrivingLog:
         self.CANONICAL_BACKUP_FILE = root / CONFIG['files']['canonical_backup']
         self.OUTPUT_KMZ_FILE = root / CONFIG['files']['output_kmz']
 
-        self.ignore = {
-            t: [isoparse(dt) for dt in CONFIG['import']['ignore'][t]]
-            for t in ['trk', 'trkseg']
-        }
-
+        self.ignore = CONFIG['import']['ignore']
+        
     def backup(self):
         """Backs up the canonical logfile."""
         shutil.copy(self.CANONICAL_KML_FILE, self.CANONICAL_BACKUP_FILE)
