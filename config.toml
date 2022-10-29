@@ -29,35 +29,71 @@ min_points = 1 # Only keep linestrings with at least this many points
   
 [import.gpx]
 
+# Configure which scripts are run on GPX files from different devices (_default
+# configuration is used if a GPX file doesn't match any of the other devices.)
+# Each script has a script.enabled flag. If enabled is false, the script is not
+# run, and the script's other parameters do not need to be set.
+#
+# SCRIPTS
+#
+# merge_segments
+#   Joins consecutive track segments within a track.
+#   merge_segments.enabled (bool): Enables or disables this script.
+#   merge_segments.max_seconds (int): Segments with a time gap between them of
+#     greater than this number of seconds will not be joined.
+#
+# split_segments
+#   Splits individual track segments into multiple segments when there are gaps
+#   of time where no points are recorded.
+#   split_segments.enabled (bool): Enables or disables this script.
+#   split_segments.threshold (int): The minimum time gap in seconds between
+#     points needed to create a split.
+#
+# trim
+#   Removes no-motion points at start or end of a segment.
+#   trim.enabled (bool): Enables or disables this script.
+#
+# simplify
+#   Reduces the number of points in track segments by removing points that
+#   won't significantly change the shape of the segment (e.g. linear points on a
+#   straight portion of the segment). Uses a spherical Ramer-Douglas-Peucker
+#   simplification algorithm.
+#   simplify.enabled (bool): Enables or disables this script.
+#   simplify.epsilon (float): The epsilon parameter for the RDP algorithm.
+#     Determines the amount of error tolerated in the simplification; higher
+#     values result in fewer points but less well-fitting track segments. A good
+#     balanced value for driving tracks is 2e-6.
+
 [import.gpx._default]
 merge_segments.enabled = false
 split_segments.enabled = false
 trim.enabled = false
 simplify.enabled = false
 
-[import.gpx.bad_elf]
+[import.gpx.bad_elf] # Bad Elf GPS Pro+
 merge_segments.enabled = false
 split_segments.enabled = true
 split_segments.threshold = 300
 trim.enabled = false # Since the Bad Elf device is set to only record above a minimum speed threshold, trim is not needed.
 simplify.enabled = true
-simplify.epsilon = 0.000002
+simplify.epsilon = 2e-6
 
-[import.gpx.garmin]
+[import.gpx.garmin] # Garmin DriveSmart and Garmin nüvi devices
 merge_segments.enabled = true
 merge_segments.max_seconds = 600
 split_segments.enabled = false
 trim.enabled = false
 simplify.enabled = false
     
-[import.gpx.mytracks]
+[import.gpx.mytracks] # myTracks iOS app
 merge_segments.enabled = false
 split_segments.enabled = false
 trim.enabled = false
 simplify.enabled = true
-simplify.epsilon = 0.000002
+simplify.epsilon = 2e-6
 
-# Tracks and track segments to ignore when importing. Tracks and track segments are identified by a UTC timestamp of their first waypoint.
+# Tracks and track segments to ignore when importing. Tracks and track segments
+# are identified by a UTC timestamp of their first waypoint.
 [import.ignore]
 trk = [ 
   # GPX Tracks to ignore.
@@ -91,6 +127,7 @@ trk = [
   2022-04-01T01:12:56+00:00, # Amy driving
 ]
 trkseg = [
-  # Individual track segments to ignore. (All track segments in a track ignored above will also be ignored.)      
+  # Individual track segments to ignore. (All track segments in a track ignored
+  # above will also be ignored.)      
   2021-10-03T18:31:26-04:00,
 ]
