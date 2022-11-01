@@ -40,6 +40,10 @@ I’ve had difficulty mounting Garmin devices as directories under recent versio
 
 ## Utility Scripts
 
+### filter_speed.py
+
+Rather than starting and stopping a GPS logger at the beginning and end of every ride, it's sometimes beneficial to leave the logger running all day. However, if the logger is removed from the car, then walking may be recorded in addition to driving. This script removes all points below a specified speed threshold, which should be set just slightly above the user's walking speed.
+
 ### find_outliers.py
 
 Occasionally, points will be recorded which are far outside of a driving track. This script calculates the speed between subsequent pairs of points, and looks for points where the speed from the previous point and to the next point exceeds a certain threshold, indicating that the point is likely an outlier.
