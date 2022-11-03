@@ -22,6 +22,13 @@ bad_elf  = "%Y%m%dT%H%M%SZ"
 mytracks = "%Y%m%dT%H%M%SZ"
 
 
+# Multiplier needed to convert each device's native speed unit into meters/sec.
+[speed_multiplier]
+bad_elf  = 1.0      # m/s
+garmin   = 1.0      # m/s
+mytracks = 0.277778 # km/h
+
+
 # IMPORT CONFIGURATION
 
 [import]

@@ -4,16 +4,17 @@ Removes points from a GPX file below a speed threshold.
 import argparse
 import gpxpy
 import pandas as pd
+import tomli
 
 from pathlib import Path
 
 from gpx_utilities import gpx_profile
 
-M_S_PER_KMH = (1/3.6)
+with open(Path(__file__).parent / "config.toml", 'rb') as f:
+    CONFIG = tomli.load(f)
+
 DEFAULT_SPEED_THRESHOLD_M_S = 2.2352 # 2.2352 m/s = 5 MPH
-
 ROLLING_WINDOW = 9
-
 SPEED_TAGS = {
     'garmin': [
         '{http://www.garmin.com/xmlschemas/TrackPointExtension/v2}speed',
@@ -81,9 +82,8 @@ def filter_speed(
     # Build dataframe.
     speed_list = [get_speed(point, profile) for point in trackpoints]
     speed_df = pd.DataFrame(speed_list, columns=['speed'])
-    if profile == 'mytracks':
-        speed_df['speed'] = speed_df['speed'] * M_S_PER_KMH
-    
+    speed_df['speed'] = speed_df['speed'] * CONFIG['speed_multiplier'][profile]
+        
     # Calculate rolling medians. To avoid cutting off too many points
     # during low speed turns after a stop, look at both forward and
     # backward rolling median and keep point if either exceeds speed

@@ -6,19 +6,18 @@ import argparse
 import gpxpy
 import math
 import pandas as pd
+import tomli
 
 from pathlib import Path
 
 from gpx_utilities import gpx_profile
 
+with open(Path(__file__).parent / "config.toml", 'rb') as f:
+    CONFIG = tomli.load(f)
+
 ROLLING_WINDOW = 5
-# SPEED_THRESHOLD = 0.4 # m/s
-SPEED_THRESHOLD = { # m/s
-    '_default': 0.4,
-    'garmin':   0.4,
-    'mytracks': 4.0,
-    'bad_elf':  0.4,
-}
+SPEED_THRESHOLD = 0.4 # m/s
+
 SPEED_TAGS = {
     'garmin': [
         '{http://www.garmin.com/xmlschemas/TrackPointExtension/v2}speed',
@@ -78,16 +77,17 @@ def trim(trackpoints, profile='_default'):
     # Build dataframe.
     speed_list = [get_speed(point, profile) for point in trackpoints]
     speed_df = pd.DataFrame(speed_list, columns=['speed'])
+    speed_df['speed'] = speed_df['speed'] * CONFIG['speed_multiplier'][profile]
     speed_df['rolling'] = speed_df['speed'] \
         .rolling(ROLLING_WINDOW).median()
     
     # Find the first row where the rolling median exceeds the threshold.
-    start = speed_df[speed_df['rolling'] >= SPEED_THRESHOLD[profile]].index[0]
+    start = speed_df[speed_df['rolling'] >= SPEED_THRESHOLD].index[0]
     # Move half the median earlier to find where movement started.
     start = max(start - math.floor(ROLLING_WINDOW/2), 0)
     
     # Find the last row where the rolling median exceeds the threshold.
-    end = speed_df[speed_df['rolling'] >= SPEED_THRESHOLD[profile]].index[-1]
+    end = speed_df[speed_df['rolling'] >= SPEED_THRESHOLD].index[-1]
     # Move half the median earlier to find where movement ended.
     end = max(end - math.floor(ROLLING_WINDOW/2), 0)
 
