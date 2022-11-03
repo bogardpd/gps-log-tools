@@ -1,4 +1,4 @@
-"""
+"""M_S_PER_KMH
 Removes points from a GPX file below a speed threshold.
 """
 import argparse
@@ -13,7 +13,7 @@ from gpx_utilities import gpx_profile
 with open(Path(__file__).parent / "config.toml", 'rb') as f:
     CONFIG = tomli.load(f)
 
-DEFAULT_SPEED_THRESHOLD_M_S = 2.2352 # 2.2352 m/s = 5 MPH
+DEFAULT_MIN_SPEED_M_S = 2.2352 # 2.2352 m/s = 5 MPH
 DEFAULT_ROLLING_WINDOW = 9
 SPEED_TAGS = {
     'garmin': [
@@ -38,7 +38,7 @@ def main(args):
 
     # Trim GPX.
     gpx_filtered = filter_speed_gpx(gpx,
-        speed_threshold_m_s=float(args.minimum_speed),
+        min_speed_m_s=float(args.min_speed),
         rolling_window=int(args.rolling_window),
     )
 
@@ -52,7 +52,7 @@ def main(args):
 
 
 def filter_speed_gpx(gpx,
-    speed_threshold_m_s=DEFAULT_SPEED_THRESHOLD_M_S,
+    min_speed_m_s=DEFAULT_MIN_SPEED_M_S,
     rolling_window=DEFAULT_ROLLING_WINDOW,
 ):
     """Trims points from all track segments in GPX data."""
@@ -67,20 +67,20 @@ def filter_speed_gpx(gpx,
             else:
                 segment.points = filter_speed(
                     segment.points,
-                    speed_threshold_m_s,
+                    min_speed_m_s,
                     rolling_window,
                     profile,
                 )
                 diff = original_point_count - len(segment.points)
                 print(
-                    f"\tRemoved {diff} points below {speed_threshold_m_s} m/s."
+                    f"\tRemoved {diff} points below {min_speed_m_s} m/s."
                 )
     
     return gpx
 
 
 def filter_speed(trackpoints,
-    speed_threshold_m_s=DEFAULT_SPEED_THRESHOLD_M_S,
+    min_speed_m_s=DEFAULT_MIN_SPEED_M_S,
     rolling_window=DEFAULT_ROLLING_WINDOW,
     profile='_default'
 ):
@@ -101,8 +101,8 @@ def filter_speed(trackpoints,
         .rolling(rolling_window).median()[::1]
 
     above_threshold = speed_df[
-        (speed_df['rolling_forward'] >= speed_threshold_m_s)
-        | (speed_df['rolling_backward'] >= speed_threshold_m_s)
+        (speed_df['rolling_forward'] >= min_speed_m_s)
+        | (speed_df['rolling_backward'] >= min_speed_m_s)
     ]
 
     filtered_trackpoints = [
@@ -138,10 +138,10 @@ if __name__ == "__main__":
         help="GPX file to filter low speeds from",
     )
     parser.add_argument("--min_speed",
-        dest='minimum_speed',
+        dest='min_speed',
         help="Minimum speed to allow (m/s)",
         nargs='?',
-        default=DEFAULT_SPEED_THRESHOLD_M_S,
+        default=DEFAULT_MIN_SPEED_M_S,
     )
     parser.add_argument("--rolling_window",
         dest='rolling_window',

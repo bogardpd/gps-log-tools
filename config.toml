@@ -72,12 +72,14 @@ min_points = 1 # Only keep linestrings with at least this many points
 #     balanced value for driving tracks is 2e-6.
 
 [import.gpx._default]
+filter_speed.enabled = false
 merge_segments.enabled = false
 split_segments.enabled = false
 trim.enabled = false
 simplify.enabled = false
 
 [import.gpx.bad_elf] # Bad Elf GPS Pro+
+filter_speed.enabled = false # Already filtered in device hardware.
 merge_segments.enabled = false
 split_segments.enabled = true
 split_segments.threshold = 300
@@ -86,6 +88,7 @@ simplify.enabled = true
 simplify.epsilon = 2e-6
 
 [import.gpx.garmin] # Garmin DriveSmart and Garmin nüvi devices
+filter_speed.enabled = false
 merge_segments.enabled = true
 merge_segments.max_seconds = 600
 split_segments.enabled = false
@@ -93,8 +96,12 @@ trim.enabled = false
 simplify.enabled = false
     
 [import.gpx.mytracks] # myTracks iOS app
+filter_speed.enabled = true
+filter_speed.min_speed_m_s = 2.2352 # 5 MPH
+filter_speed.rolling_window = 9
 merge_segments.enabled = false
-split_segments.enabled = false
+split_segments.enabled = true
+split_segments.threshold = 300
 trim.enabled = false
 simplify.enabled = true
 simplify.epsilon = 2e-6

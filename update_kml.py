@@ -17,6 +17,7 @@ from pykml.helpers import set_max_decimal_places
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from gpx_utilities import gpx_profile
+from filter_speed import filter_speed_gpx
 from simplify_gpx import rdp_spherical
 from split_gpx_time import split_segments
 from trim_gpx import trim
@@ -302,6 +303,14 @@ class DrivingLog:
             except AttributeError:
                 return segments
         
+        # Filter low speeds out of GPX file.
+        if gpx_config['filter_speed']['enabled']:
+            print("Speed filtering GPX file...")
+            gpx = filter_speed_gpx(gpx,
+                min_speed_m_s=gpx_config['filter_speed']['min_speed_m_s'],
+                rolling_window=gpx_config['filter_speed']['rolling_window'],
+            )            
+
         tracks = []
         for track in gpx.tracks:
             print(f"Converting track \"{track.name}\"...")
