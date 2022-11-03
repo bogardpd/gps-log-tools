@@ -14,7 +14,7 @@ with open(Path(__file__).parent / "config.toml", 'rb') as f:
     CONFIG = tomli.load(f)
 
 DEFAULT_SPEED_THRESHOLD_M_S = 2.2352 # 2.2352 m/s = 5 MPH
-ROLLING_WINDOW = 9
+DEFAULT_ROLLING_WINDOW = 9
 SPEED_TAGS = {
     'garmin': [
         '{http://www.garmin.com/xmlschemas/TrackPointExtension/v2}speed',
@@ -37,8 +37,9 @@ def main(args):
         gpx = gpxpy.parse(f)
 
     # Trim GPX.
-    gpx_filtered = filter_speed_gpx(
-        gpx, speed_threshold_m_s=float(args.minimum_speed)
+    gpx_filtered = filter_speed_gpx(gpx,
+        speed_threshold_m_s=float(args.minimum_speed),
+        rolling_window=int(args.rolling_window),
     )
 
     # Write to new GPX file.
@@ -50,7 +51,10 @@ def main(args):
     print(f"Saved speed filtered GPX to {output_path}.")
 
 
-def filter_speed_gpx(gpx, speed_threshold_m_s=DEFAULT_SPEED_THRESHOLD_M_S):
+def filter_speed_gpx(gpx,
+    speed_threshold_m_s=DEFAULT_SPEED_THRESHOLD_M_S,
+    rolling_window=DEFAULT_ROLLING_WINDOW,
+):
     """Trims points from all track segments in GPX data."""
     profile = gpx_profile(gpx.creator)
 
@@ -58,11 +62,14 @@ def filter_speed_gpx(gpx, speed_threshold_m_s=DEFAULT_SPEED_THRESHOLD_M_S):
         for sn, segment in enumerate(track.segments):
             original_point_count = len(segment.points)
             print(f"\tTrimming segment {sn+1}/{len(track.segments)}.")
-            if len(segment.points) < ROLLING_WINDOW:
-                print("\tNot enough points to perform a trim.")
+            if len(segment.points) < rolling_window:
+                print("\tNot enough points to perform a filter.")
             else:
                 segment.points = filter_speed(
-                    segment.points, speed_threshold_m_s, profile
+                    segment.points,
+                    speed_threshold_m_s,
+                    rolling_window,
+                    profile,
                 )
                 diff = original_point_count - len(segment.points)
                 print(
@@ -72,9 +79,9 @@ def filter_speed_gpx(gpx, speed_threshold_m_s=DEFAULT_SPEED_THRESHOLD_M_S):
     return gpx
 
 
-def filter_speed(
-    trackpoints,
+def filter_speed(trackpoints,
     speed_threshold_m_s=DEFAULT_SPEED_THRESHOLD_M_S,
+    rolling_window=DEFAULT_ROLLING_WINDOW,
     profile='_default'
 ):
     """Removes no-motion points at start or end of a segment."""
@@ -83,15 +90,15 @@ def filter_speed(
     speed_list = [get_speed(point, profile) for point in trackpoints]
     speed_df = pd.DataFrame(speed_list, columns=['speed'])
     speed_df['speed'] = speed_df['speed'] * CONFIG['speed_multiplier'][profile]
-        
+    
     # Calculate rolling medians. To avoid cutting off too many points
     # during low speed turns after a stop, look at both forward and
     # backward rolling median and keep point if either exceeds speed
     # threshold.
     speed_df['rolling_forward'] = speed_df['speed'] \
-        .rolling(ROLLING_WINDOW).median()
+        .rolling(rolling_window).median()
     speed_df['rolling_backward'] = speed_df['speed'][::-1] \
-        .rolling(ROLLING_WINDOW).median()[::1]
+        .rolling(rolling_window).median()[::1]
 
     above_threshold = speed_df[
         (speed_df['rolling_forward'] >= speed_threshold_m_s)
@@ -130,11 +137,17 @@ if __name__ == "__main__":
         dest='gpx_file',
         help="GPX file to filter low speeds from",
     )
-    parser.add_argument(
+    parser.add_argument("--min_speed",
         dest='minimum_speed',
         help="Minimum speed to allow (m/s)",
         nargs='?',
         default=DEFAULT_SPEED_THRESHOLD_M_S,
+    )
+    parser.add_argument("--rolling_window",
+        dest='rolling_window',
+        help="Length of rolling median window",
+        nargs='?',
+        default=DEFAULT_ROLLING_WINDOW,
     )
     args = parser.parse_args()
     main(args)
