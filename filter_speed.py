@@ -12,7 +12,7 @@ from gpx_utilities import gpx_profile
 M_S_PER_KMH = (1/3.6)
 DEFAULT_SPEED_THRESHOLD_M_S = 2.2352 # 2.2352 m/s = 5 MPH
 
-ROLLING_WINDOW = 5
+ROLLING_WINDOW = 9
 
 SPEED_TAGS = {
     'garmin': [
@@ -83,10 +83,20 @@ def filter_speed(
     speed_df = pd.DataFrame(speed_list, columns=['speed'])
     if profile == 'mytracks':
         speed_df['speed'] = speed_df['speed'] * M_S_PER_KMH
-    speed_df['rolling'] = speed_df['speed'] \
+    
+    # Calculate rolling medians. To avoid cutting off too many points
+    # during low speed turns after a stop, look at both forward and
+    # backward rolling median and keep point if either exceeds speed
+    # threshold.
+    speed_df['rolling_forward'] = speed_df['speed'] \
         .rolling(ROLLING_WINDOW).median()
+    speed_df['rolling_backward'] = speed_df['speed'][::-1] \
+        .rolling(ROLLING_WINDOW).median()[::1]
 
-    above_threshold = speed_df[speed_df['rolling'] >= speed_threshold_m_s]
+    above_threshold = speed_df[
+        (speed_df['rolling_forward'] >= speed_threshold_m_s)
+        | (speed_df['rolling_backward'] >= speed_threshold_m_s)
+    ]
 
     filtered_trackpoints = [
         trackpoints[at]
