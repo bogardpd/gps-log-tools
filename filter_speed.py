@@ -14,7 +14,8 @@ with open(Path(__file__).parent / "config.toml", 'rb') as f:
     CONFIG = tomli.load(f)
 
 DEFAULT_MIN_SPEED_M_S = 2.2352 # 2.2352 m/s = 5 MPH
-DEFAULT_ROLLING_WINDOW = 9
+DEFAULT_ROLLING_WINDOW = 25
+DEFAULT_METHOD = 'center'
 SPEED_TAGS = {
     'garmin': [
         '{http://www.garmin.com/xmlschemas/TrackPointExtension/v2}speed',
@@ -40,6 +41,7 @@ def main(args):
     gpx_filtered = filter_speed_gpx(gpx,
         min_speed_m_s=float(args.min_speed),
         rolling_window=int(args.rolling_window),
+        method=args.method,
     )
 
     # Write to new GPX file.
@@ -54,6 +56,7 @@ def main(args):
 def filter_speed_gpx(gpx,
     min_speed_m_s=DEFAULT_MIN_SPEED_M_S,
     rolling_window=DEFAULT_ROLLING_WINDOW,
+    method=DEFAULT_METHOD,
 ):
     """Trims points from all track segments in GPX data."""
     profile = gpx_profile(gpx.creator)
@@ -69,6 +72,7 @@ def filter_speed_gpx(gpx,
                     segment.points,
                     min_speed_m_s,
                     rolling_window,
+                    method,
                     profile,
                 )
                 diff = original_point_count - len(segment.points)
@@ -82,6 +86,7 @@ def filter_speed_gpx(gpx,
 def filter_speed(trackpoints,
     min_speed_m_s=DEFAULT_MIN_SPEED_M_S,
     rolling_window=DEFAULT_ROLLING_WINDOW,
+    method=DEFAULT_METHOD,
     profile='_default'
 ):
     """Removes no-motion points at start or end of a segment."""
@@ -91,19 +96,27 @@ def filter_speed(trackpoints,
     speed_df = pd.DataFrame(speed_list, columns=['speed'])
     speed_df['speed'] = speed_df['speed'] * CONFIG['speed_multiplier'][profile]
     
-    # Calculate rolling medians. To avoid cutting off too many points
-    # during low speed turns after a stop, look at both forward and
-    # backward rolling median and keep point if either exceeds speed
-    # threshold.
-    speed_df['rolling_forward'] = speed_df['speed'] \
-        .rolling(rolling_window).median()
-    speed_df['rolling_backward'] = speed_df['speed'][::-1] \
-        .rolling(rolling_window).median()[::1]
+    # Calculate rolling medians.
+    if method == 'center':
+    
+        speed_df['rolling'] = speed_df['speed'] \
+            .rolling(rolling_window, center=True).median()
 
-    above_threshold = speed_df[
-        (speed_df['rolling_forward'] >= min_speed_m_s)
-        | (speed_df['rolling_backward'] >= min_speed_m_s)
-    ]
+        above_threshold = speed_df[speed_df['rolling'] >= min_speed_m_s]
+
+    elif method == 'extended':
+        # To avoid cutting off too many points during low speed turns
+        # after a stop, look at both forward and backward rolling median
+        # and keep point if either exceeds speed threshold.
+        speed_df['rolling_forward'] = speed_df['speed'] \
+            .rolling(rolling_window).median()
+        speed_df['rolling_backward'] = speed_df['speed'][::-1] \
+            .rolling(rolling_window).median()[::1]
+
+        above_threshold = speed_df[
+            (speed_df['rolling_forward'] >= min_speed_m_s)
+            | (speed_df['rolling_backward'] >= min_speed_m_s)
+        ]
 
     filtered_trackpoints = [
         trackpoints[at]
@@ -148,6 +161,13 @@ if __name__ == "__main__":
         help="Length of rolling median window",
         nargs='?',
         default=DEFAULT_ROLLING_WINDOW,
+    )
+    parser.add_argument("--method",
+        dest='method',
+        help="Rolling average method (center or extended)",
+        choices=['center', 'extended'],
+        nargs='?',
+        default=DEFAULT_METHOD,
     )
     args = parser.parse_args()
     main(args)

@@ -43,6 +43,16 @@ min_points = 1 # Only keep linestrings with at least this many points
 #
 # SCRIPTS
 #
+# filter_speed
+#   Filters low speeds from a GPX file.
+#   filter_speed.enabled (bool): Enables or disables this script.
+#   filter_speed.min_speed: Minimum speed to keep (meters per second).
+#   filter_speed.rolling_window: Length of rolling median window for avoiding
+#     outliers.
+#   filter_speed.method: (str "center"|"extended"): "center" centers the #    #     rolling window. "extended" uses both a left- and right-aligned window, and
+#     only rejects points if they fall below the minimum speed in both
+#     windows.   
+#
 # merge_segments
 #   Joins consecutive track segments within a track.
 #   merge_segments.enabled (bool): Enables or disables this script.
@@ -98,7 +108,8 @@ simplify.enabled = false
 [import.gpx.mytracks] # myTracks iOS app
 filter_speed.enabled = true
 filter_speed.min_speed_m_s = 2.2352 # 5 MPH
-filter_speed.rolling_window = 9
+filter_speed.rolling_window = 25
+filter_speed.method = "center"
 merge_segments.enabled = false
 split_segments.enabled = true
 split_segments.threshold = 300
