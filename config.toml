@@ -107,7 +107,7 @@ simplify.enabled = false
     
 [import.gpx.mytracks] # myTracks iOS app
 filter_speed.enabled = true
-filter_speed.min_speed_m_s = 1.78816 # 4 MPH
+filter_speed.min_speed_m_s = 2.0 # 4.5 MPH
 filter_speed.rolling_window = 20
 filter_speed.method = "center"
 merge_segments.enabled = false
