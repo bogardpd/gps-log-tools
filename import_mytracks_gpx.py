@@ -1,6 +1,5 @@
 """Imports GPX files from an input folder."""
 import gpxpy
-import os
 import sys
 import traceback
 import tomli
