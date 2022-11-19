@@ -3,6 +3,7 @@
 [folders]
 auto_root   = "~/OneDrive/Projects/Driving-Logs"
 import_root = "~/OneDrive/Import/"
+
 [folders.raw]
 bad_elf     = "Raw-Data/bad_elf"
 mytracks    = "Raw-Data/mytracks"
@@ -11,6 +12,9 @@ mytracks    = "Raw-Data/mytracks"
 canonical_kml    = "driving_canonical.kml"
 canonical_backup = "./.Backup/driving_canonical.backup.kml"
 output_kmz       = "Driving.kmz"
+
+[files.absolute]
+timelog = "~/iCloudDrive/Timelog/timelog.csv"
 
 
 # TIMESTAMP FORMATS
