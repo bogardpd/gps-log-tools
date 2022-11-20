@@ -46,7 +46,8 @@ def main(args):
 
     # Write to new GPX file.
     output_path = (
-        input_path.parent / f"{input_path.stem}_speed_filtered{input_path.suffix}"
+        input_path.parent
+        / f"{input_path.stem}_speed_filtered{input_path.suffix}"
     )
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(gpx_filtered.to_xml())
