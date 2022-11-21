@@ -57,7 +57,7 @@ class GPXFile():
             print(f"Converting track \"{trk.name}\"...")
 
             # Filter out ignored trksegs.
-            trk.segments = self._remove_ignored_trksegs(trk.segments)
+            trk = self._remove_ignored_trksegs(trk)
 
             for ts_i, trkseg in enumerate(trk.segments):
                 # Get timestamp before any trkseg processing.
@@ -90,15 +90,26 @@ class GPXFile():
         except AttributeError:
             return parse(trk.name).astimezone(timezone.utc)
     
-    def _remove_ignored_trksegs(self, trksegs):
+    def _remove_ignored_trksegs(self, trk):
         """Removes segments whose first point matches ignore list."""
         try:
-            return [
-                trkseg for trkseg in trksegs
+            trk.segments = [
+                trkseg for trkseg in trk.segments
                 if trkseg.points[0].time not in self.ignore['trkseg']
             ]
+            return trk
         except AttributeError:
-            return trksegs
+            return trk
+
+    # def _remove_ignored_trksegs(self, trksegs):
+    #     """Removes segments whose first point matches ignore list."""
+    #     try:
+    #         return [
+    #             trkseg for trkseg in trksegs
+    #             if trkseg.points[0].time not in self.ignore['trkseg']
+    #         ]
+    #     except AttributeError:
+    #         return trksegs
 
 
 class BadElfGPXFile(GPXFile):
@@ -119,7 +130,7 @@ class BadElfGPXFile(GPXFile):
             print(f"Converting track \"{trk.name}\"...")
 
             # Filter out ignored trksegs.
-            trk.segments = self._remove_ignored_trksegs(trk.segments)
+            trk = self._remove_ignored_trksegs(trk)
 
             # Split trksegs with large time gaps into multiple trksegs.
             trk.segments = split_trksegs(
@@ -171,16 +182,15 @@ class MyTracksGPXFile(GPXFile):
             print(f"Converting track \"{trk.name}\"...")
 
             # Filter out ignored trksegs.
-            trk.segments = self._remove_ignored_trksegs(trk.segments)
+            trk = self._remove_ignored_trksegs(trk)
 
             # Filter out low speed points.
-            filter_speed_config = self.import_config['filter_speed']
-            trk = filter_speed_trk(trk,
-                min_speed_m_s=filter_speed_config['min_speed_m_s'],
-                rolling_window=filter_speed_config['rolling_window'],
-                method=filter_speed_config['method'],
-                profile=self.profile,
-            )
+            filter_speed_config = {
+                v: self.import_config['filter_speed'][v]
+                for v in ['min_speed_m_s','rolling_window','method']
+            }
+            filter_speed_config['profile'] = self.profile
+            trk = filter_speed_trk(trk, **filter_speed_config)
 
             # Split trksegs with large time gaps into multiple trksegs.
             trk.segments = split_trksegs(
