@@ -50,12 +50,12 @@ def simplify(gpx, epsilon):
 def simplify_trkseg(trkseg, epsilon, ts_i=None, ts_len=None):
     """Takes a trkseg and returns a simplifed trkseg."""
     if ts_i is None or ts_len is None:
-        print("\tSimplifying segment.")
+        print("  Simplifying segment.")
     else:
-        print(f"\tSimplifying segment {ts_i+1}/{ts_len}.")
-    print(f"\t\tOriginal: {len(trkseg.points)} points")
+        print(f"  Simplifying segment {ts_i+1}/{ts_len}.")
+    print(f"    Original: {len(trkseg.points)} points")
     trkseg.points = rdp_spherical(trkseg.points, epsilon)
-    print(f"\t\tSimplilfied: {len(trkseg.points)} points")
+    print(f"    Simplilfied: {len(trkseg.points)} points")
     return trkseg
 
 

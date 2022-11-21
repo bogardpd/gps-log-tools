@@ -6,6 +6,7 @@ import gpxpy
 from pathlib import Path
 import tomli
 
+from filter_speed import filter_speed_trk
 from gpx_utilities import gpx_profile
 from simplify_gpx import simplify_trkseg
 from split_gpx_time import split_trksegs
@@ -25,7 +26,8 @@ class GPXFile():
         self.ignore = CONFIG['import']['ignore']
         self.is_processed = False
         self.driving_tracks = []
-        self.import_config = CONFIG['import']['gpx']['_default']
+        self.profile = '_default'
+        self.import_config = CONFIG['import']['gpx'][self.profile]
     
     @staticmethod
     def new(gpx_path):
@@ -103,7 +105,8 @@ class BadElfGPXFile(GPXFile):
     """A GPX file created by a Bad Elf GPS device."""
     def __init__(self, gpx_path, gpx=None) -> None:
         super().__init__(gpx_path, gpx)
-        self.import_config = CONFIG['import']['gpx']['bad_elf']
+        self.profile = 'bad_elf'
+        self.import_config = CONFIG['import']['gpx'][self.profile]
 
     def process(self):
         """Processes GPX file into a list of DrivingTracks."""
@@ -133,7 +136,7 @@ class BadElfGPXFile(GPXFile):
                     trkseg,
                     self.import_config['simplify']['epsilon'],
                     ts_i,
-                    len(trk.segments)
+                    len(trk.segments),
                 )
                 
                 # Append processed trkseg to driving tracks list.
@@ -146,13 +149,61 @@ class GarminGPXFile(GPXFile):
     """A GPX file created by a Garmin DriveSmart automotive GPS."""
     def __init__(self, gpx_path, gpx=None) -> None:
         super().__init__(gpx_path, gpx)
-        self.import_config = CONFIG['import']['gpx']['garmin']
+        self.profile = 'garmin'
+        self.import_config = CONFIG['import']['gpx'][self.profile]
+
 
 class MyTracksGPXFile(GPXFile):
     """A GPX file created by the myTracks iOS app."""
     def __init__(self, gpx_path, gpx=None) -> None:
         super().__init__(gpx_path, gpx)
-        self.import_config = CONFIG['import']['gpx']['mytracks']
+        self.profile = 'mytracks'
+        self.import_config = CONFIG['import']['gpx'][self.profile]
+
+    def process(self):
+        """Processes GPX file into a list of DrivingTracks."""
+        print(f"Processing \"{self.gpx_path}\" as myTracks GPX...")
+        if self.is_processed:
+            print("This file has already been processed. Skipping processing.")
+            return False
+        
+        for trk in self.gpx.tracks:
+            print(f"Converting track \"{trk.name}\"...")
+
+            # Filter out ignored trksegs.
+            trk.segments = self._remove_ignored_trksegs(trk.segments)
+
+            # Filter out low speed points.
+            filter_speed_config = self.import_config['filter_speed']
+            trk = filter_speed_trk(trk,
+                min_speed_m_s=filter_speed_config['min_speed_m_s'],
+                rolling_window=filter_speed_config['rolling_window'],
+                method=filter_speed_config['method'],
+                profile=self.profile,
+            )
+
+            # Split trksegs with large time gaps into multiple trksegs.
+            trk.segments = split_trksegs(
+                trk.segments,
+                self.import_config['split_trksegs']['threshold']
+            )
+
+            for ts_i, trkseg in enumerate(trk.segments):
+                # Get timestamp before any trkseg processing.
+                timestamp = self._get_trkseg_timestamp(trk, trkseg)
+
+                # Simplify trkseg.
+                trkseg = simplify_trkseg(
+                    trkseg,
+                    self.import_config['simplify']['epsilon'],
+                    ts_i,
+                    len(trk.segments),
+                )
+                
+                # Append processed trkseg to driving tracks list.
+                self._append_driving_track(trk, trkseg, timestamp)
+
+        self.is_processed = True
 
 
 if __name__ == "__main__":

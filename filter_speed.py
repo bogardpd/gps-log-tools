@@ -63,26 +63,38 @@ def filter_speed_gpx(gpx,
     profile = gpx_profile(gpx.creator)
 
     for tn, track in enumerate(gpx.tracks):
-        for sn, segment in enumerate(track.segments):
-            original_point_count = len(segment.points)
-            print(f"\tTrimming segment {sn+1}/{len(track.segments)}.")
-            if len(segment.points) < rolling_window:
-                print("\tNot enough points to perform a filter.")
-            else:
-                segment.points = filter_speed(
-                    segment.points,
-                    min_speed_m_s,
-                    rolling_window,
-                    method,
-                    profile,
-                )
-                diff = original_point_count - len(segment.points)
-                print(
-                    f"\tRemoved {diff} points below {min_speed_m_s} m/s."
-                )
-    
+        filter_speed_trk(track,
+            min_speed_m_s,
+            rolling_window,
+            method,
+            profile,
+        )
     return gpx
 
+def filter_speed_trk(trk,
+    min_speed_m_s=DEFAULT_MIN_SPEED_M_S,
+    rolling_window=DEFAULT_ROLLING_WINDOW,
+    method=DEFAULT_METHOD,
+    profile='_default'
+):
+    for sn, segment in enumerate(trk.segments):
+        original_point_count = len(segment.points)
+        print(f"  Speed filtering segment {sn+1}/{len(trk.segments)}.")
+        if len(segment.points) < rolling_window:
+            print("    Not enough points to perform a filter.")
+        else:
+            segment.points = filter_speed(
+                segment.points,
+                min_speed_m_s,
+                rolling_window,
+                method,
+                profile,
+            )
+            diff = original_point_count - len(segment.points)
+            print(
+                f"    Removed {diff} points below {min_speed_m_s} m/s."
+            )
+    return trk
 
 def filter_speed(trackpoints,
     min_speed_m_s=DEFAULT_MIN_SPEED_M_S,

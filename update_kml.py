@@ -309,6 +309,7 @@ class DrivingLog:
             gpx = filter_speed_gpx(gpx,
                 min_speed_m_s=gpx_config['filter_speed']['min_speed_m_s'],
                 rolling_window=gpx_config['filter_speed']['rolling_window'],
+                method=gpx_config['filter_speed']['method'],
             )            
 
         tracks = []
