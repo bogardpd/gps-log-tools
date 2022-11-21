@@ -19,7 +19,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 from gpx_utilities import gpx_profile
 from filter_speed import filter_speed_gpx
 from simplify_gpx import rdp_spherical
-from split_gpx_time import split_segments
+from split_gpx_time import split_trksegs
 from trim_gpx import trim
 
 # This script will generate both a KML file (to act as the canonical
@@ -285,7 +285,7 @@ class DrivingLog:
                 return segments
 
         def merge_segments(segments, index=0):
-            """ Merges segments with small time gaps. """
+            """Merges segments with small time gaps."""
             print("Merging segments...")
             segments = segments.copy()
             if index + 1 == len(segments):
@@ -321,10 +321,10 @@ class DrivingLog:
 
             # Split track segment with large time gaps into multiple
             # segments.
-            if gpx_config['split_segments']['enabled']:
-                track.segments = split_segments(
+            if gpx_config['split_trksegs']['enabled']:
+                track.segments = split_trksegs(
                     track.segments,
-                    gpx_config['split_segments']['threshold']
+                    gpx_config['split_trksegs']['threshold']
                 )
 
             for sn, segment in enumerate(track.segments):

@@ -38,14 +38,25 @@ def simplify(gpx, epsilon):
     for tn, track in enumerate(gpx.tracks):
         print(f"Processing track {tn+1}/{len(gpx.tracks)}: `{track.name}`.")
         for sn, segment in enumerate(track.segments):
-            print(f"\tSimplifying segment {sn+1}/{len(track.segments)}.")
-            print(f"\t\tOriginal: {len(segment.points)} points")
-            
-            segment.points = rdp_spherical(segment.points, epsilon)
-
-            print(f"\t\tSimplilfied: {len(segment.points)} points")
-            
+            segment = simplify_trkseg(
+                segment,
+                epsilon,
+                sn,
+                len(track.segments)
+            )
+                        
     return gpx
+
+def simplify_trkseg(trkseg, epsilon, ts_i=None, ts_len=None):
+    """Takes a trkseg and returns a simplifed trkseg."""
+    if ts_i is None or ts_len is None:
+        print("\tSimplifying segment.")
+    else:
+        print(f"\tSimplifying segment {ts_i+1}/{ts_len}.")
+    print(f"\t\tOriginal: {len(trkseg.points)} points")
+    trkseg.points = rdp_spherical(trkseg.points, epsilon)
+    print(f"\t\tSimplilfied: {len(trkseg.points)} points")
+    return trkseg
 
 
 def rdp_spherical(trackpoints, epsilon):

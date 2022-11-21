@@ -42,11 +42,11 @@ def split_gpx(gpx, threshold):
     """Splits all tracks in a GPX file."""
     for tn, track in enumerate(gpx.tracks):
         print(f"Processing track {tn+1}/{len(gpx.tracks)}: `{track.name}`.")
-        track.segments = split_segments(track.segments, threshold)
+        track.segments = split_trksegs(track.segments, threshold)
     return gpx
 
 
-def split_segments(segments, threshold):
+def split_trksegs(segments, threshold):
     """Splits GPX trksegs with time gaps at or above threshold."""
     updated_trksegs = []
     for sn, segment in enumerate(segments):

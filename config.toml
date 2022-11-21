@@ -63,11 +63,11 @@ min_points = 1 # Only keep linestrings with at least this many points
 #   merge_segments.max_seconds (int): Segments with a time gap between them of
 #     greater than this number of seconds will not be joined.
 #
-# split_segments
+# split_trksegs
 #   Splits individual track segments into multiple segments when there are gaps
 #   of time where no points are recorded.
-#   split_segments.enabled (bool): Enables or disables this script.
-#   split_segments.threshold (int): The minimum time gap in seconds between
+#   split_trksegs.enabled (bool): Enables or disables this script.
+#   split_trksegs.threshold (int): The minimum time gap in seconds between
 #     points needed to create a split.
 #
 # trim
@@ -88,15 +88,15 @@ min_points = 1 # Only keep linestrings with at least this many points
 [import.gpx._default]
 filter_speed.enabled = false
 merge_segments.enabled = false
-split_segments.enabled = false
+split_trksegs.enabled = false
 trim.enabled = false
 simplify.enabled = false
 
 [import.gpx.bad_elf] # Bad Elf GPS Pro+
 filter_speed.enabled = false # Already filtered in device hardware.
 merge_segments.enabled = false
-split_segments.enabled = true
-split_segments.threshold = 300
+split_trksegs.enabled = true
+split_trksegs.threshold = 300
 trim.enabled = false # Since the Bad Elf device is set to only record above a minimum speed threshold, trim is not needed.
 simplify.enabled = true
 simplify.epsilon = 2e-6
@@ -105,7 +105,7 @@ simplify.epsilon = 2e-6
 filter_speed.enabled = false
 merge_segments.enabled = true
 merge_segments.max_seconds = 600
-split_segments.enabled = false
+split_trksegs.enabled = false
 trim.enabled = false
 simplify.enabled = false
     
@@ -115,8 +115,8 @@ filter_speed.min_speed_m_s = 1.78816 # 4 MPH
 filter_speed.rolling_window = 25
 filter_speed.method = "center"
 merge_segments.enabled = false
-split_segments.enabled = true
-split_segments.threshold = 300
+split_trksegs.enabled = true
+split_trksegs.threshold = 300
 trim.enabled = false
 simplify.enabled = true
 simplify.epsilon = 2e-6
