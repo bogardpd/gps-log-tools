@@ -89,7 +89,6 @@ class GPXFile():
             for v in ['min_speed_m_s','rolling_window','method']
         }
         filter_speed_config['profile'] = self.profile
-        print(filter_speed_config)
         return filter_speed_config
 
     def _get_trkseg_timestamp(self, trk, trkseg):
