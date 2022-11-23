@@ -17,7 +17,7 @@ def main(args):
         gpx = gpxpy.parse(f)
 
     # Filter GPX.
-    gpx_filtered = filter_gpx_by_timelog(gpx)
+    gpx_filtered = gpx_filter_timelog(gpx)
     
     # Write to new GPX file.
     output_path = (
@@ -28,25 +28,25 @@ def main(args):
         f.write(gpx_filtered.to_xml())
     print(f"Saved timelog filtered GPX to {output_path}.")
 
-def filter_gpx_by_timelog(gpx):
+def gpx_filter_timelog(gpx):
     """Filters a GPX file against the timelog."""
 
     # Get timelog segments.
     timesegs = get_timelog_segments()
 
     for track in gpx.tracks:
-        track = filter_track_by_timelog(track, timesegs=timesegs)
+        track = trk_filter_timelog(track, timesegs=timesegs)
 
     return gpx
 
-def filter_track_by_timelog(track, timesegs=None):
+def trk_filter_timelog(track, timesegs=None):
     """Filters a GPX track against the timelog."""
     if timesegs is None:
         timesegs = get_timelog_segments()
     
     filtered_segments = []
     for segment in track.segments:
-        filtered_segments.append(filter_segment_by_timelog(segment))
+        filtered_segments.append(trkseg_filter_timelog(segment))
     
     # Flatten list of list of segments:
     track.segments = [
@@ -57,7 +57,7 @@ def filter_track_by_timelog(track, timesegs=None):
 
     return track
 
-def filter_segment_by_timelog(segment, timesegs=None):
+def trkseg_filter_timelog(segment, timesegs=None):
     """Filters a GPX segment against the timelog.
     
     Returns a list of segments.
@@ -93,8 +93,6 @@ def filter_segment_by_timelog(segment, timesegs=None):
             segments.append(new_segment)
     
     return segments
-
-
 
 def get_timelog_segments():
     """Parses the timelog and returns a dataframe."""

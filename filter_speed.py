@@ -38,7 +38,7 @@ def main(args):
         gpx = gpxpy.parse(f)
 
     # Trim GPX.
-    gpx_filtered = filter_speed_gpx(gpx,
+    gpx_filtered = gpx_filter_speed(gpx,
         min_speed_m_s=float(args.min_speed),
         rolling_window=int(args.rolling_window),
         method=args.method,
@@ -54,7 +54,7 @@ def main(args):
     print(f"Saved speed filtered GPX to {output_path}.")
 
 
-def filter_speed_gpx(gpx,
+def gpx_filter_speed(gpx,
     min_speed_m_s=DEFAULT_MIN_SPEED_M_S,
     rolling_window=DEFAULT_ROLLING_WINDOW,
     method=DEFAULT_METHOD,
@@ -63,7 +63,7 @@ def filter_speed_gpx(gpx,
     profile = gpx_profile(gpx.creator)
 
     for tn, track in enumerate(gpx.tracks):
-        filter_speed_trk(track,
+        trk_filter_speed(track,
             min_speed_m_s,
             rolling_window,
             method,
@@ -71,7 +71,7 @@ def filter_speed_gpx(gpx,
         )
     return gpx
 
-def filter_speed_trk(trk,
+def trk_filter_speed(trk,
     min_speed_m_s=DEFAULT_MIN_SPEED_M_S,
     rolling_window=DEFAULT_ROLLING_WINDOW,
     method=DEFAULT_METHOD,

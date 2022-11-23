@@ -7,10 +7,10 @@ from pathlib import Path
 import tomli
 
 from DrivingTrack import DrivingTrack
-from filter_speed import filter_speed_trk
+from filter_speed import trk_filter_speed
 from gpx_utilities import gpx_profile
-from simplify_gpx import simplify_trkseg
-from split_gpx_time import split_trksegs
+from simplify_gpx import trkseg_simplify
+from split_gpx_time import trk_split_trksegs
 
 with open(Path(__file__).parent / "config.toml", 'rb') as f:
     CONFIG = tomli.load(f)
@@ -57,18 +57,18 @@ class GPXFile():
             print(f"Converting track \"{trk.name}\"...")
 
             # Filter out ignored trksegs.
-            trk = self._remove_ignored_trksegs(trk)
+            trk = self._trk_remove_ignored_trksegs(trk)
 
             for ts_i, trkseg in enumerate(trk.segments):
                 # Get timestamp before any trkseg processing.
-                timestamp = self._get_trkseg_timestamp(trk, trkseg)
+                timestamp = self._trkseg_get_timestamp(trk, trkseg)
 
                 # Append processed trkseg to driving tracks list.
-                self._append_driving_track(trk, trkseg, timestamp)
+                self._trkseg_append_driving_track(trk, trkseg, timestamp)
 
         self.is_processed = True
 
-    def _append_driving_track(self, trk, trkseg, timestamp):
+    def _trkseg_append_driving_track(self, trk, trkseg, timestamp):
         """Appends a trkseg as a new DrivingTrack."""
         coords = list(
             (p.longitude, p.latitude) for p in trkseg.points
@@ -91,14 +91,14 @@ class GPXFile():
         filter_speed_config['profile'] = self.profile
         return filter_speed_config
 
-    def _get_trkseg_timestamp(self, trk, trkseg):
+    def _trkseg_get_timestamp(self, trk, trkseg):
         """Gets the time of the first trkpt of a trkseg."""
         try:
             return trkseg.points[0].time.astimezone(timezone.utc)
         except AttributeError:
             return parse(trk.name).astimezone(timezone.utc)
     
-    def _merge_small_gap_trksegs(self, trksegs, index=0):
+    def _trk_merge_trksegs(self, trksegs, index=0):
         """Recursively merges segments with small time gaps."""
         print("Merging segments...")
         trksegs = trksegs.copy()
@@ -111,13 +111,13 @@ class GPXFile():
             if timediff <= timedelta(seconds=max_seconds):
                 a.points.extend(b.points)
                 del trksegs[index+1]
-                return self._merge_small_gap_trksegs(trksegs, index=index)
+                return self._trk_merge_trksegs(trksegs, index=index)
             else:
-                return self._merge_small_gap_trksegs(trksegs, index=index+1)
+                return self._trk_merge_trksegs(trksegs, index=index+1)
         except AttributeError:
             return trksegs
 
-    def _remove_ignored_trksegs(self, trk):
+    def _trk_remove_ignored_trksegs(self, trk):
         """Removes segments whose first point matches ignore list."""
         try:
             trk.segments = [
@@ -147,20 +147,20 @@ class BadElfGPXFile(GPXFile):
             print(f"Converting track \"{trk.name}\"...")
 
             # Filter out ignored trksegs.
-            trk = self._remove_ignored_trksegs(trk)
+            trk = self._trk_remove_ignored_trksegs(trk)
 
             # Split trksegs with large time gaps into multiple trksegs.
-            trk.segments = split_trksegs(
+            trk.segments = trk_split_trksegs(
                 trk.segments,
                 self.import_config['split_trksegs']['threshold']
             )
 
             for ts_i, trkseg in enumerate(trk.segments):
                 # Get timestamp before any trkseg processing.
-                timestamp = self._get_trkseg_timestamp(trk, trkseg)
+                timestamp = self._trkseg_get_timestamp(trk, trkseg)
 
                 # Simplify trkseg.
-                trkseg = simplify_trkseg(
+                trkseg = trkseg_simplify(
                     trkseg,
                     self.import_config['simplify']['epsilon'],
                     ts_i,
@@ -168,7 +168,7 @@ class BadElfGPXFile(GPXFile):
                 )
                 
                 # Append processed trkseg to driving tracks list.
-                self._append_driving_track(trk, trkseg, timestamp)
+                self._trkseg_append_driving_track(trk, trkseg, timestamp)
 
         self.is_processed = True
 
@@ -191,17 +191,17 @@ class GarminGPXFile(GPXFile):
             print(f"Converting track \"{trk.name}\"...")
 
             # Filter out ignored trksegs.
-            trk = self._remove_ignored_trksegs(trk)
+            trk = self._trk_remove_ignored_trksegs(trk)
 
             # Merge track segments with small time gaps between them.
-            trk.segments = self._merge_small_gap_trksegs(trk.segments)
+            trk.segments = self._trk_merge_trksegs(trk.segments)
 
             for ts_i, trkseg in enumerate(trk.segments):
                 # Get timestamp before any trkseg processing.
-                timestamp = self._get_trkseg_timestamp(trk, trkseg)
+                timestamp = self._trkseg_get_timestamp(trk, trkseg)
 
                 # Append processed trkseg to driving tracks list.
-                self._append_driving_track(trk, trkseg, timestamp)
+                self._trkseg_append_driving_track(trk, trkseg, timestamp)
 
         self.is_processed = True
 
@@ -224,23 +224,23 @@ class MyTracksGPXFile(GPXFile):
             print(f"Converting track \"{trk.name}\"...")
 
             # Filter out ignored trksegs.
-            trk = self._remove_ignored_trksegs(trk)
+            trk = self._trk_remove_ignored_trksegs(trk)
 
             # Filter out low speed points.
-            trk = filter_speed_trk(trk, **self._get_filter_speed_config())
+            trk = trk_filter_speed(trk, **self._get_filter_speed_config())
 
             # Split trksegs with large time gaps into multiple trksegs.
-            trk.segments = split_trksegs(
+            trk.segments = trk_split_trksegs(
                 trk.segments,
                 self.import_config['split_trksegs']['threshold']
             )
 
             for ts_i, trkseg in enumerate(trk.segments):
                 # Get timestamp before any trkseg processing.
-                timestamp = self._get_trkseg_timestamp(trk, trkseg)
+                timestamp = self._trkseg_get_timestamp(trk, trkseg)
 
                 # Simplify trkseg.
-                trkseg = simplify_trkseg(
+                trkseg = trkseg_simplify(
                     trkseg,
                     self.import_config['simplify']['epsilon'],
                     ts_i,
@@ -248,7 +248,7 @@ class MyTracksGPXFile(GPXFile):
                 )
                 
                 # Append processed trkseg to driving tracks list.
-                self._append_driving_track(trk, trkseg, timestamp)
+                self._trkseg_append_driving_track(trk, trkseg, timestamp)
 
         self.is_processed = True
 

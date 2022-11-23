@@ -40,7 +40,7 @@ def main(args):
         gpx = gpxpy.parse(f)
 
     # Trim GPX.
-    gpx_trimmed = trim_gpx(gpx)
+    gpx_trimmed = gpx_trim(gpx)
 
     # Write to new GPX file.
     output_path = (
@@ -51,7 +51,7 @@ def main(args):
     print(f"Saved trimmed GPX to {output_path}.")
 
 
-def trim_gpx(gpx):
+def gpx_trim(gpx):
     """Trims points from all track segments in GPX data."""
     profile = gpx_profile(gpx.creator)
 

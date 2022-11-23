@@ -38,7 +38,7 @@ def simplify(gpx, epsilon):
     for tn, track in enumerate(gpx.tracks):
         print(f"Processing track {tn+1}/{len(gpx.tracks)}: `{track.name}`.")
         for sn, segment in enumerate(track.segments):
-            segment = simplify_trkseg(
+            segment = trkseg_simplify(
                 segment,
                 epsilon,
                 sn,
@@ -47,7 +47,7 @@ def simplify(gpx, epsilon):
                         
     return gpx
 
-def simplify_trkseg(trkseg, epsilon, ts_i=None, ts_len=None):
+def trkseg_simplify(trkseg, epsilon, ts_i=None, ts_len=None):
     """Takes a trkseg and returns a simplifed trkseg."""
     if ts_i is None or ts_len is None:
         print("  Simplifying segment.")
