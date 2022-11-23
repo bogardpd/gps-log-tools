@@ -6,11 +6,11 @@ import gpxpy
 from pathlib import Path
 import tomli
 
+from DrivingTrack import DrivingTrack
 from filter_speed import filter_speed_trk
 from gpx_utilities import gpx_profile
 from simplify_gpx import simplify_trkseg
 from split_gpx_time import split_trksegs
-from update_kml import DrivingTrack
 
 with open(Path(__file__).parent / "config.toml", 'rb') as f:
     CONFIG = tomli.load(f)
@@ -256,9 +256,9 @@ class MyTracksGPXFile(GPXFile):
 
 if __name__ == "__main__":
     sample_paths = [
-        # "~/OneDrive/Projects/Driving-Logs/Raw-Data/bad_elf/20221118T222956Z.gpx",
+        "~/OneDrive/Projects/Driving-Logs/Raw-Data/bad_elf/20221118T222956Z.gpx",
         "~/OneDrive/Projects/Driving-Logs/Raw-Data/garmin/20220616T2124Z_55LM.gpx",
-        # "~/OneDrive/Projects/Driving-Logs/Raw-Data/mytracks/20221117T140648Z.gpx",
+        "~/OneDrive/Projects/Driving-Logs/Raw-Data/mytracks/20221117T140648Z.gpx",
     ]
     for path in sample_paths:
         gpx_file = GPXFile.new(Path(path).expanduser())

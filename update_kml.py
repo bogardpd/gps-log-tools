@@ -1,7 +1,11 @@
-"""Updates canonical KML file and imports GPX if provided."""
+"""Updates canonical KML file and imports GPX if provided.
+
+This script will generate both a KML file (to act as the canonical
+storage for driving data in a human readable format) and a KMZ file with additional processing (e.g. merging tracks in folders). The KMLfile will
+be read when merging new data.
+"""
 
 import argparse
-import gpxpy
 import io
 import shutil
 import sys
@@ -9,23 +13,16 @@ import traceback
 import tomli
 
 from datetime import time, datetime, timedelta, timezone
-from dateutil.parser import parse, isoparse
+from dateutil.parser import parse
 from lxml import etree
 from pathlib import Path
 from pykml.factory import KML_ElementMaker as KML
 from pykml.helpers import set_max_decimal_places
 from zipfile import ZipFile, ZIP_DEFLATED
 
+from DrivingTrack import DrivingTrack
+from GPXFile import GPXFile
 from gpx_utilities import gpx_profile
-from filter_speed import filter_speed_gpx
-from simplify_gpx import rdp_spherical
-from split_gpx_time import split_trksegs
-from trim_gpx import trim
-
-# This script will generate both a KML file (to act as the canonical
-# storage for driving data in a human readable format) and a KMZ file
-# with additional processing (e.g. merging tracks in folders). The KML
-# file will be read when merging new data.
 
 with open(Path(__file__).parent / "config.toml", 'rb') as f:
     CONFIG = tomli.load(f)
@@ -147,9 +144,9 @@ class DrivingLog:
         # GPX files were provided; parse and merge them.
         gpx_tracks = {} # Use dict to ensure unique timestamps.
         for f in gpx_files:
-            file_tracks = self.__convert_gpx_to_tracks(
-                f, self.ignore['trkseg']
-            )
+            gpx_file = GPXFile.new(f)
+            gpx_file.process()
+            file_tracks = gpx_file.driving_tracks
             for ft in file_tracks:
                 if ft.timestamp not in self.ignore['trk']:
                     gpx_tracks[ft.timestamp] = ft
@@ -266,111 +263,6 @@ class DrivingLog:
         self.tracks.extend(tracks_to_merge)
 
     @staticmethod
-    def __convert_gpx_to_tracks(gpx_file, ignore_trkseg=[]):
-        """Converts a GPX file to a list of Tracks."""
-        print(f"Reading GPX from \"{gpx_file}\"...")
-        with open(gpx_file, 'r') as f:
-            gpx = gpxpy.parse(f)
-
-        gpx_config = DrivingLog.__processing_config(gpx.creator)
-
-        def filter_segments(segments):
-            """Removes segments whose first point matches ignore list."""
-            try:
-                return [
-                    seg for seg in segments
-                    if seg.points[0].time not in ignore_trkseg
-                ]
-            except AttributeError:
-                return segments
-
-        def merge_segments(segments, index=0):
-            """Merges segments with small time gaps."""
-            print("Merging segments...")
-            segments = segments.copy()
-            if index + 1 == len(segments):
-                return segments
-            a,b = segments[index:index+2]
-            try:
-                timediff = b.points[0].time - a.points[-1].time
-                max_seconds = gpx_config['merge_segments']['max_seconds']
-                if timediff <= timedelta(seconds=max_seconds):
-                    a.points.extend(b.points)
-                    del segments[index+1]
-                    return merge_segments(segments, index=index)
-                else:
-                    return merge_segments(segments, index=index+1)
-            except AttributeError:
-                return segments
-        
-        # Filter low speeds out of GPX file.
-        if gpx_config['filter_speed']['enabled']:
-            print("Speed filtering GPX file...")
-            gpx = filter_speed_gpx(gpx,
-                min_speed_m_s=gpx_config['filter_speed']['min_speed_m_s'],
-                rolling_window=gpx_config['filter_speed']['rolling_window'],
-                method=gpx_config['filter_speed']['method'],
-            )            
-
-        tracks = []
-        for track in gpx.tracks:
-            print(f"Converting track \"{track.name}\"...")
-            desc = track.description
-            track.segments = filter_segments(track.segments)
-            if gpx_config['merge_segments']['enabled']:
-                track.segments = merge_segments(track.segments)
-
-            # Split track segment with large time gaps into multiple
-            # segments.
-            if gpx_config['split_trksegs']['enabled']:
-                track.segments = split_trksegs(
-                    track.segments,
-                    gpx_config['split_trksegs']['threshold']
-                )
-
-            for sn, segment in enumerate(track.segments):
-                # Get timestamp before any trimming or simplification.
-                try:
-                    timestamp = segment.points[0].time.astimezone(timezone.utc)
-                except AttributeError:
-                    timestamp = parse(track.name).astimezone(timezone.utc)
-                
-                # Trim excess points from beginning of track segment.
-                if gpx_config['trim']['enabled']:
-                    print(f"Trimming segment {sn+1}/{len(track.segments)}...")
-                    original_point_count = len(segment.points)
-                    profile = gpx_profile(gpx.creator)
-                    segment.points = trim(segment.points, profile)
-                    diff = original_point_count - len(segment.points)
-                    print(
-                        f"\tRemoved {diff} excess points from ends of segment."
-                    )
-
-                # Simplify track segment.
-                if gpx_config['simplify']['enabled']:
-                    print(
-                        f"Simplifying segment {sn+1}/{len(track.segments)}..."
-                    )
-                    epsilon = gpx_config['simplify']['epsilon']
-                    print(f"\tOriginal: {len(segment.points)} points")
-                    segment.points = rdp_spherical(segment.points, epsilon)
-                    print(f"\tSimplified: {len(segment.points)} points")
-
-                coords = list(
-                    (p.longitude, p.latitude) for p in segment.points
-                )
-            
-                if len(coords) >= CONFIG['import']['min_points']:
-                    new_track = DrivingTrack(timestamp)
-                    new_track.coords = coords
-                    new_track.description = desc
-                    new_track.creator = gpx.creator
-                    new_track.is_new = True
-                    tracks.append(new_track)
-
-        return tracks
-
-    @staticmethod
     def __log_element_key(log_element):
         """
         Returns the timestamp of a DrivingTrack, or the timestamp of the
@@ -387,58 +279,6 @@ class DrivingLog:
         """Parses a creator to determine a processing configuration."""
         profile = gpx_profile(creator)
         return CONFIG['import']['gpx'][profile]
-
-class DrivingTrack:
-    """An instance of a driving log track."""
-    def __init__(self, id_timestamp) -> None:
-        self.timestamp = id_timestamp # Starting timestamp is used as id
-        self.coords = []
-        self.creator = None
-        self.description = None
-        self.is_new = False
-
-    def __repr__(self) -> str:
-        return f"DrivingTrack({self.timestamp.isoformat()})"
-
-    def get_kml_placemark(self):
-        """Returns a KML Placemark for the track."""
-        pm_desc = (
-            KML.description(self.description) if self.description
-            else None
-        )
-        coord_str = " ".join(
-            ",".join(
-                str(t) for t in coord[0:2] # Remove altitude if present
-            ) for coord in self.coords
-        )
-        pm_name = self.timestamp.strftime(CONFIG['timestamps']['kml_name'])
-        if self.creator:
-            pm_extdata = KML.ExtendedData(
-                KML.Data(
-                    KML.displayName("Creator"),
-                    KML.value(self.creator),
-                    name='creator',
-                )
-            )
-        else:
-            pm_extdata = None
-        if self.is_new:
-            pm_name += " (new)"
-        pm = KML.Placemark(
-            KML.name(pm_name),
-            pm_desc,
-            pm_extdata,
-            KML.TimeStamp(
-                KML.when(self.timestamp.isoformat())
-            ),
-            KML.styleUrl("#1"),
-            KML.altitudeMode("clampToGround"),
-            KML.tessellate(1),
-            KML.LineString(
-                KML.coordinates(coord_str),
-            ),
-        )
-        return pm
 
 
 def update_kml(gpx_files = [], skip_export=False):
