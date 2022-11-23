@@ -30,7 +30,7 @@ class GPXFile():
         self.import_config = CONFIG['import']['gpx'][self.profile]
     
     @staticmethod
-    def new(gpx_path):
+    def load(gpx_path):
         """Parses a GPX file and returns a GPXFile instance.
         
         If appropriate, returns a child class of GPXFile instead.
@@ -260,7 +260,7 @@ if __name__ == "__main__":
         "~/OneDrive/Projects/Driving-Logs/Raw-Data/mytracks/20221117T140648Z.gpx",
     ]
     for path in sample_paths:
-        gpx_file = GPXFile.new(Path(path).expanduser())
+        gpx_file = GPXFile.load(Path(path).expanduser())
         print(gpx_file)
         gpx_file.process()
         print(gpx_file.driving_tracks)

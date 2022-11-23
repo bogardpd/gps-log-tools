@@ -144,7 +144,7 @@ class DrivingLog:
         # GPX files were provided; parse and merge them.
         gpx_tracks = {} # Use dict to ensure unique timestamps.
         for f in gpx_files:
-            gpx_file = GPXFile.new(f)
+            gpx_file = GPXFile.load(f)
             gpx_file.process()
             file_tracks = gpx_file.driving_tracks
             for ft in file_tracks:
