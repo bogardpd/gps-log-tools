@@ -44,6 +44,22 @@ I’ve had difficulty mounting Garmin devices as directories under recent versio
 
 Rather than starting and stopping a GPS logger at the beginning and end of every ride, it's sometimes beneficial to leave the logger running all day. However, if the logger is removed from the car, then walking may be recorded in addition to driving. This script removes all points below a specified speed threshold, which should be set just slightly above the user's walking speed.
 
+### filter_timelog.py
+
+Splits a GPX file's tracks into segments based on a CSV file of start and top times. This is intended for use with some sort of automated script which can generate a CSV file based on car start and stop times—for example, an iOS automation script that will generate the timestamps in an iCloud text file based on CarPlay connect and disconnect triggers.
+
+The CSV file uses the following format:
+
+```
+status,time
++,2022-11-17T09:04:46-05:00
+-,2022-11-17T10:09:00-05:00
++,2022-11-17T11:14:39-05:00
+-,2022-11-17T11:51:41-05:00
+```
+
+`+` status indicates the start of a segment, and `-` indicates the stop of a segment. Tracks will be split into separate segments any time a `-` changes to a `+`, and any track points with a timestamp between adjacent `-` and `+` timestamps will be discarded.
+
 ### find_outliers.py
 
 Occasionally, points will be recorded which are far outside of a driving track. This script calculates the speed between subsequent pairs of points, and looks for points where the speed from the previous point and to the next point exceeds a certain threshold, indicating that the point is likely an outlier.
