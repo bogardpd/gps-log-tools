@@ -1,6 +1,6 @@
 """Classes for working with GPX files."""
 
-from datetime import timezone
+from datetime import timedelta, timezone
 from dateutil.parser import parse
 import gpxpy
 from pathlib import Path
@@ -99,6 +99,25 @@ class GPXFile():
         except AttributeError:
             return parse(trk.name).astimezone(timezone.utc)
     
+    def _merge_small_gap_trksegs(self, trksegs, index=0):
+        """Recursively merges segments with small time gaps."""
+        print("Merging segments...")
+        trksegs = trksegs.copy()
+        if index + 1 == len(trksegs):
+            return trksegs
+        a,b = trksegs[index:index+2]
+        try:
+            timediff = b.points[0].time - a.points[-1].time
+            max_seconds = self.import_config['merge_segments']['max_seconds']
+            if timediff <= timedelta(seconds=max_seconds):
+                a.points.extend(b.points)
+                del trksegs[index+1]
+                return self._merge_small_gap_trksegs(trksegs, index=index)
+            else:
+                return self._merge_small_gap_trksegs(trksegs, index=index+1)
+        except AttributeError:
+            return trksegs
+
     def _remove_ignored_trksegs(self, trk):
         """Removes segments whose first point matches ignore list."""
         try:
@@ -162,6 +181,31 @@ class GarminGPXFile(GPXFile):
         self.profile = 'garmin'
         self.import_config = CONFIG['import']['gpx'][self.profile]
 
+    def process(self):
+        """Processes GPX file into a list of DrivingTracks."""
+        print(f"Processing \"{self.gpx_path}\" as Garmin GPX...")
+        if self.is_processed:
+            print("This file has already been processed. Skipping processing.")
+            return False
+        
+        for trk in self.gpx.tracks:
+            print(f"Converting track \"{trk.name}\"...")
+
+            # Filter out ignored trksegs.
+            trk = self._remove_ignored_trksegs(trk)
+
+            # Merge track segments with small time gaps between them.
+            trk.segments = self._merge_small_gap_trksegs(trk.segments)
+
+            for ts_i, trkseg in enumerate(trk.segments):
+                # Get timestamp before any trkseg processing.
+                timestamp = self._get_trkseg_timestamp(trk, trkseg)
+
+                # Append processed trkseg to driving tracks list.
+                self._append_driving_track(trk, trkseg, timestamp)
+
+        self.is_processed = True
+
 
 class MyTracksGPXFile(GPXFile):
     """A GPX file created by the myTracks iOS app."""
@@ -212,9 +256,9 @@ class MyTracksGPXFile(GPXFile):
 
 if __name__ == "__main__":
     sample_paths = [
-        "~/OneDrive/Projects/Driving-Logs/Raw-Data/bad_elf/20221118T222956Z.gpx",
+        # "~/OneDrive/Projects/Driving-Logs/Raw-Data/bad_elf/20221118T222956Z.gpx",
         "~/OneDrive/Projects/Driving-Logs/Raw-Data/garmin/20220616T2124Z_55LM.gpx",
-        "~/OneDrive/Projects/Driving-Logs/Raw-Data/mytracks/20221117T140648Z.gpx",
+        # "~/OneDrive/Projects/Driving-Logs/Raw-Data/mytracks/20221117T140648Z.gpx",
     ]
     for path in sample_paths:
         gpx_file = GPXFile.new(Path(path).expanduser())
