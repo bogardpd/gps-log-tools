@@ -50,7 +50,7 @@ class GPXFile():
         """Processes GPX file into a list of DrivingTracks."""
         print(f"Processing \"{self.gpx_path}\"...")
         if self.is_processed:
-            print("This fi_get_trkseg_timestample has already been processed. Skipping processing.")
+            print("This file has already been processed. Skipping processing.")
             return False
         
         for trk in self.gpx.tracks:
