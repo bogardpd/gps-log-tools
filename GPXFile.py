@@ -8,6 +8,11 @@ import tomli
 
 from DrivingTrack import DrivingTrack
 from filter_speed import trk_filter_speed
+from filter_timelog import (
+    get_timelog_segments,
+    timelog_overlaps_range,
+    trk_filter_timelog
+)
 from gpx_utilities import gpx_profile
 from simplify_gpx import trkseg_simplify
 from split_gpx_time import trk_split_trksegs
@@ -65,21 +70,6 @@ class GPXFile():
 
         self.is_processed = True
 
-    def _trkseg_append_driving_track(self, trk, trkseg, timestamp):
-        """Appends a trkseg as a new DrivingTrack."""
-        coords = list(
-            (p.longitude, p.latitude) for p in trkseg.points
-        )
-    
-        if len(coords) >= CONFIG['import']['min_points']:
-            new_track = DrivingTrack(timestamp)
-            new_track.coords = coords
-            new_track.description = trk.description
-            new_track.creator = self.gpx.creator
-            new_track.is_new = True
-
-        self.driving_tracks.append(new_track)
-    
     def _get_filter_speed_config(self):
         filter_speed_config = {
             v: self.import_config['filter_speed'][v]
@@ -87,14 +77,19 @@ class GPXFile():
         }
         filter_speed_config['profile'] = self.profile
         return filter_speed_config
-
-    def _trkseg_get_timestamp(self, trk, trkseg):
-        """Gets the time of the first trkpt of a trkseg."""
-        try:
-            return trkseg.points[0].time.astimezone(timezone.utc)
-        except AttributeError:
-            return parse(trk.name).astimezone(timezone.utc)
     
+    def _trk_get_time_range(self, trk):
+        """Returns a tuple with the first and last time of a trk."""
+        min_time = trk_timestamp = min([
+            trkseg.points[0].time.astimezone(timezone.utc)
+            for trkseg in trk.segments
+        ])
+        max_time = max([
+            trkseg.points[-1].time.astimezone(timezone.utc)
+            for trkseg in trk.segments
+        ])
+        return (min_time, max_time)
+
     def _trk_merge_trksegs(self, trksegs, index=0):
         """Recursively merges segments with small time gaps."""
         print("Merging segments...")
@@ -120,10 +115,7 @@ class GPXFile():
         """Removes trks and trksegs that are on ignore lists."""
         
         # If trk is ignored, remove all trksegs.
-        trk_timestamp = min([
-            trkseg.points[0].time.astimezone(timezone.utc)
-            for trkseg in trk.segments
-        ])
+        trk_timestamp = self._trk_get_time_range(trk)[0]
         if trk_timestamp in self.ignore['trk']:
             trk.segments = []
             return trk
@@ -137,6 +129,29 @@ class GPXFile():
             return trk
         except AttributeError:
             return trk
+    
+    def _trkseg_append_driving_track(self, trk, trkseg, timestamp):
+        """Appends a trkseg as a new DrivingTrack."""
+        coords = list(
+            (p.longitude, p.latitude) for p in trkseg.points
+        )
+    
+        if len(coords) >= CONFIG['import']['min_points']:
+            new_track = DrivingTrack(timestamp)
+            new_track.coords = coords
+            new_track.description = trk.description
+            new_track.creator = self.gpx.creator
+            new_track.is_new = True
+
+        self.driving_tracks.append(new_track)
+
+    def _trkseg_get_timestamp(self, trk, trkseg):
+        """Gets the time of the first trkpt of a trkseg."""
+        try:
+            return trkseg.points[0].time.astimezone(timezone.utc)
+        except AttributeError:
+            return parse(trk.name).astimezone(timezone.utc)
+    
 
 
 class BadElfGPXFile(GPXFile):
@@ -227,17 +242,31 @@ class MyTracksGPXFile(GPXFile):
             print("This file has already been processed. Skipping processing.")
             return False
         
+        # Parse timelog.
+        timesegs = get_timelog_segments()
+
         for trk in self.gpx.tracks:
             print(f"Converting track \"{trk.name}\"...")
 
-            # Filter out low speed points.
-            trk = trk_filter_speed(trk, **self._get_filter_speed_config())
+            trk_time_range = self._trk_get_time_range(trk)
+            if timelog_overlaps_range(timesegs, trk_time_range):
+                # Filter using timelog.
+                trk = trk_filter_timelog(
+                    trk, timesegs=timesegs, raise_exception=False
+                )
 
-            # Split trksegs with large time gaps into multiple trksegs.
-            trk.segments = trk_split_trksegs(
-                trk.segments,
-                self.import_config['split_trksegs']['threshold']
-            )
+            else:
+                # Filter using speed and split trksegs.
+                print("Track does not overlap timelog segments.")
+
+                # Filter out low speed points.
+                trk = trk_filter_speed(trk, **self._get_filter_speed_config())
+
+                # Split trksegs with large time gaps into multiple trksegs.
+                trk.segments = trk_split_trksegs(
+                    trk.segments,
+                    self.import_config['split_trksegs']['threshold']
+                )
 
             for ts_i, trkseg in enumerate(trk.segments):
                 # Get timestamp before any trkseg processing.
@@ -259,8 +288,9 @@ class MyTracksGPXFile(GPXFile):
 
 if __name__ == "__main__":
     sample_paths = [
-        "~/OneDrive/Projects/Driving-Logs/Raw-Data/bad_elf/20221118T222956Z.gpx",
-        "~/OneDrive/Projects/Driving-Logs/Raw-Data/garmin/20220404T0242Z_50LMT.gpx",
+        # "~/OneDrive/Projects/Driving-Logs/Raw-Data/bad_elf/20221118T222956Z.gpx",
+        # "~/OneDrive/Projects/Driving-Logs/Raw-Data/garmin/20220404T0242Z_50LMT.gpx",
+        # "~/OneDrive/Projects/Driving-Logs/Raw-Data/mytracks/20221116T124435Z.gpx",
         "~/OneDrive/Projects/Driving-Logs/Raw-Data/mytracks/20221117T140648Z.gpx",
     ]
     for path in sample_paths:

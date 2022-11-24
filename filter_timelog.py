@@ -8,6 +8,8 @@ import tomli
 with open(Path(__file__).parent / "config.toml", 'rb') as f:
     CONFIG = tomli.load(f)
 
+class NoTimelogOverlapError(ValueError):
+    pass
 
 def main(args):
     print(f"Filtering by timelog for {args.gpx_file}.")
@@ -39,14 +41,16 @@ def gpx_filter_timelog(gpx):
 
     return gpx
 
-def trk_filter_timelog(track, timesegs=None):
+def trk_filter_timelog(track, timesegs=None, raise_exception=True):
     """Filters a GPX track against the timelog."""
     if timesegs is None:
         timesegs = get_timelog_segments()
     
     filtered_segments = []
     for segment in track.segments:
-        filtered_segments.append(trkseg_filter_timelog(segment))
+        filtered_segments.append(
+            trkseg_filter_timelog(segment, timesegs, raise_exception)
+        )
     
     # Flatten list of list of segments:
     track.segments = [
@@ -57,7 +61,7 @@ def trk_filter_timelog(track, timesegs=None):
 
     return track
 
-def trkseg_filter_timelog(segment, timesegs=None):
+def trkseg_filter_timelog(segment, timesegs=None, raise_exception=True):
     """Filters a GPX segment against the timelog.
     
     Returns a list of segments.
@@ -75,7 +79,10 @@ def trkseg_filter_timelog(segment, timesegs=None):
         & (timesegs['start_utc'] < last_time)
     ]
     if len(timesegs_within_segment) == 0:
-        raise ValueError("Timelog has no overlap with trkseg.")
+        if raise_exception:
+            raise NoTimelogOverlapError("Timelog has no overlap with trkseg.")
+        else:
+            return []
 
     # Create a new segment for each timeseg
     segments = []
@@ -129,6 +136,14 @@ def get_timelog_segments():
     
     grouped['duration'] = grouped['stop_utc'] - grouped['start_utc']
     return grouped
+
+def timelog_overlaps_range(timelog, time_range):
+    """Returns true if any timelog segment overlaps time_range."""
+    timelog_overlap = timelog[
+        (timelog['stop_utc'] > time_range[0])
+        & (timelog['start_utc'] < time_range[1])
+    ]
+    return len(timelog_overlap) > 0
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
