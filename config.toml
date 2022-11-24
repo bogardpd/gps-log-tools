@@ -97,11 +97,11 @@ filter_speed.method = "center"
 split_trksegs.threshold = 300
 simplify.epsilon = 2e-6
 
-# Tracks and track segments to ignore when importing. Tracks and track segments
-# are identified by a UTC timestamp of their first waypoint.
+# Tracks and track segments to ignore when importing Garmin trip logs. Tracks
+# and track segments are identified by a UTC timestamp of their first waypoint.
 [import.ignore]
 trk = [ 
-  # GPX Tracks to ignore.
+  # Garmin GPX Tracks to ignore.
   2015-10-11T15:37:00+00:00,
   2016-05-06T15:40:01+00:00,
   2016-05-06T22:59:02+00:00,
@@ -129,10 +129,10 @@ trk = [
   2021-10-11T03:18:43+00:00,
   2021-10-11T04:15:42+00:00,
   2022-01-10T16:49:29+00:00, # Track has offset error
-  2022-04-01T01:12:56+00:00, # Amy driving
+  2022-04-01T01:12:56+00:00, # Amy driving without me
 ]
 trkseg = [
-  # Individual track segments to ignore. (All track segments in a track ignored
-  # above will also be ignored.)      
+  # Individual track segments to ignore when importing Garmin trip logs. (All
+  # track segments in a track ignored above will also be ignored.)      
   2021-10-03T18:31:26-04:00,
 ]

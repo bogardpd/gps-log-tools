@@ -148,10 +148,7 @@ class DrivingLog:
             gpx_file.process()
             file_tracks = gpx_file.driving_tracks
             for ft in file_tracks:
-                if ft.timestamp not in self.ignore['trk']:
-                    gpx_tracks[ft.timestamp] = ft
-                else:
-                    print(f"Skipping ignored track {ft}.")
+                gpx_tracks[ft.timestamp] = ft
         gpx_tracks = list(gpx_tracks.values())
 
         # Merge GPX tracks into DrivingLog tracks, keeping original

@@ -56,10 +56,7 @@ class GPXFile():
         for trk in self.gpx.tracks:
             print(f"Converting track \"{trk.name}\"...")
 
-            # Filter out ignored trksegs.
-            trk = self._trk_remove_ignored_trksegs(trk)
-
-            for ts_i, trkseg in enumerate(trk.segments):
+            for trkseg in trk.segments:
                 # Get timestamp before any trkseg processing.
                 timestamp = self._trkseg_get_timestamp(trk, trkseg)
 
@@ -101,6 +98,8 @@ class GPXFile():
     def _trk_merge_trksegs(self, trksegs, index=0):
         """Recursively merges segments with small time gaps."""
         print("Merging segments...")
+        if index == 0 and len(trksegs) == 0:
+            return trksegs
         trksegs = trksegs.copy()
         if index + 1 == len(trksegs):
             return trksegs
@@ -117,8 +116,19 @@ class GPXFile():
         except AttributeError:
             return trksegs
 
-    def _trk_remove_ignored_trksegs(self, trk):
-        """Removes segments whose first point matches ignore list."""
+    def _trk_remove_ignored(self, trk):
+        """Removes trks and trksegs that are on ignore lists."""
+        
+        # If trk is ignored, remove all trksegs.
+        trk_timestamp = min([
+            trkseg.points[0].time.astimezone(timezone.utc)
+            for trkseg in trk.segments
+        ])
+        if trk_timestamp in self.ignore['trk']:
+            trk.segments = []
+            return trk
+
+        # Remove ignored trksegs.
         try:
             trk.segments = [
                 trkseg for trkseg in trk.segments
@@ -145,9 +155,6 @@ class BadElfGPXFile(GPXFile):
         
         for trk in self.gpx.tracks:
             print(f"Converting track \"{trk.name}\"...")
-
-            # Filter out ignored trksegs.
-            trk = self._trk_remove_ignored_trksegs(trk)
 
             # Split trksegs with large time gaps into multiple trksegs.
             trk.segments = trk_split_trksegs(
@@ -190,8 +197,8 @@ class GarminGPXFile(GPXFile):
         for trk in self.gpx.tracks:
             print(f"Converting track \"{trk.name}\"...")
 
-            # Filter out ignored trksegs.
-            trk = self._trk_remove_ignored_trksegs(trk)
+            # Filter out ignored trks and trksegs.
+            trk = self._trk_remove_ignored(trk)
 
             # Merge track segments with small time gaps between them.
             trk.segments = self._trk_merge_trksegs(trk.segments)
@@ -223,9 +230,6 @@ class MyTracksGPXFile(GPXFile):
         for trk in self.gpx.tracks:
             print(f"Converting track \"{trk.name}\"...")
 
-            # Filter out ignored trksegs.
-            trk = self._trk_remove_ignored_trksegs(trk)
-
             # Filter out low speed points.
             trk = trk_filter_speed(trk, **self._get_filter_speed_config())
 
@@ -256,11 +260,11 @@ class MyTracksGPXFile(GPXFile):
 if __name__ == "__main__":
     sample_paths = [
         "~/OneDrive/Projects/Driving-Logs/Raw-Data/bad_elf/20221118T222956Z.gpx",
-        "~/OneDrive/Projects/Driving-Logs/Raw-Data/garmin/20220616T2124Z_55LM.gpx",
+        "~/OneDrive/Projects/Driving-Logs/Raw-Data/garmin/20220404T0242Z_50LMT.gpx",
         "~/OneDrive/Projects/Driving-Logs/Raw-Data/mytracks/20221117T140648Z.gpx",
     ]
     for path in sample_paths:
         gpx_file = GPXFile.load(Path(path).expanduser())
         print(gpx_file)
         gpx_file.process()
-        print(gpx_file.driving_tracks)
+        print(gpx_file.driving_tracks, len(gpx_file.driving_tracks))
