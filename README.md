@@ -19,13 +19,13 @@ Since I’m maintaining several decades of driving data, I want my KML files to 
 
 Sometimes, it’s necessary to manually edit waypoints in the canonical file (for example, noisy data that it was not possible to remove with automated processing upon import). Likewise, it’s sometimes necessary to [merge two consecutive tracks together](https://paulbogard.net/blog/20211221-fixing-driving-log-inter-track-gaps/) (which can be done by grouping tracks that need to be merged into KML sub-folders). Once that editing has been done in the canonical KML file, this script can be run without (or with) import arguments to apply the above optimizations to the newly-edited tracks.
 
-### import_bad_elf_gpx.py
+### process_import_folder.py
 
-When downloading tracks from my Bad Elf GPS Pro+ datalogger, I end up with either individual GPX files or a zipfile of GPX files. This script:
+When downloading tracks from my Bad Elf GPS Pro+ datalogger or the myTracks app, I end up with either individual GPX files or a zipfile of GPX files. This script:
 
-- looks at a designated import folder for any zipfiles matching Bad Elf's naming conventions, extracts the GPX files, and deletes the zipfiles,
+- looks at a designated import folder for any zipfiles matching Bad Elf or myTracks naming conventions, extracts the GPX files, and deletes the zipfiles,
 - imports all GPX files in the import folder using `update_kml.py`, and
-- moves all the GPX files to an archival folder, renaming them to a particular UTC timestamp format as necessary (using `rename_bad_elf_gpx.py`).
+- moves all the GPX files to an archival folder, renaming them to a particular UTC timestamp format as necessary.
 
 ### Import from Garmin.ps1
 
