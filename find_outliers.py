@@ -39,20 +39,21 @@ def find_outliers(gpx_file):
             # Find outliers by looking for points where speed from prior
             # point or speed to next point are above the speed
             # threshold.
-            outliers = points[
+            speed_outliers = points[
                 (points['speed_prev'] > SPEED_THRESHOLD)
                 | (points['speed_next'] > SPEED_THRESHOLD)
             ]
-            # Find outliers by looking for points where speed from prior
-            # point and speed to next point are both above the speed
-            # threshold.
-            # outliers = points[
-            #     (points['speed_prev'] > SPEED_THRESHOLD)
-            #     & (points['speed_next'] > SPEED_THRESHOLD)
-            # ]
+            
+            ## Find time travel outliers
+            time_travel_outliers = points[points['time_prev'] < 0]
 
-            if len(outliers) > 0:
-                print(outliers[DISPLAY_COLS])
+            if len(speed_outliers) > 0:
+                print("Speed Outliers")
+                print(speed_outliers[DISPLAY_COLS])
+
+            if len(time_travel_outliers) > 0:
+                print("Time Travel Outliers")
+                print(time_travel_outliers[DISPLAY_COLS])
 
 def distance_m(row):
     if np.isnan(row['prev_lat']) or np.isnan(row['prev_lon']):
@@ -63,5 +64,5 @@ def distance_m(row):
 
 if __name__ == "__main__":
     be_path = Path.home() / "OneDrive/Projects/Driving-Logs/Raw-Data/bad_elf/"
-    for f in list(be_path.glob("*.gpx")):
+    for f in sorted(list(be_path.glob("*.gpx"))):
         find_outliers(f)
