@@ -108,14 +108,13 @@ def get_timelog_segments():
 
     # Convert to UTC.
     df['time_utc'] = df['time'].dt.tz_convert(pytz.utc)
-    df = df.sort_values('time_utc')
+    df = df.sort_values(by=['time_utc','status'])
 
-    # Create a new segment whenever non '+' status changes to '+'. This
-    # means if there are duplicate starts or stops, the earliest start
-    # and the latest stop will be used.
+    # Create a new segment whenever 0 (stopped) status changes to 1
+    # (started). This means if there are duplicate starts or stops, the
+    # earliest start and the latest stop will be used.
     df['segment'] = (
-        (df['status'] == "+")
-        & (df['status'].shift() != "+")
+        df['status'] > df['status'].shift()
     ).astype(int).cumsum()
 
     # Group by segment.
