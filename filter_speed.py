@@ -1,4 +1,4 @@
-"""M_S_PER_KMH
+"""
 Removes points from a GPX file below a speed threshold.
 """
 import argparse
