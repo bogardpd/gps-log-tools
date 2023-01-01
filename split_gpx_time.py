@@ -76,6 +76,7 @@ def trk_split_trksegs(segments, threshold):
                 start = sts.points[0].time.strftime(TIME_FORMAT)
                 end = sts.points[-1].time.strftime(TIME_FORMAT)
                 duration = (sts.points[-1].time - sts.points[0].time).seconds
+                pt_count = len(sts.points)
                 drive = duration_str(duration, style=colorama.Fore.GREEN)
                 if stsn < (len(split_trksegs) - 1):
                     gap = duration_str(
@@ -84,11 +85,15 @@ def trk_split_trksegs(segments, threshold):
                     )
                 else:
                     gap = None
-                table.append([stsn+1, start, drive, end, gap])
+                table.append([stsn+1, start, drive, pt_count, end, gap])
             print(tabulate(table,
-                headers=['Split', 'Start', 'Drive', 'End', 'Break'],
+                headers=['Split', 'Start', 'Drive', 'Points', 'End', 'Break'],
                 stralign='right',
             ))
+            # Remove trksegs which have less than the 2 points needed to
+            # define a line:
+            split_trksegs = [s for s in split_trksegs if len(s.points) < 2]
+            
             updated_trksegs.extend(split_trksegs)
     return updated_trksegs
 
