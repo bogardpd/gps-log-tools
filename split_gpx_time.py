@@ -92,7 +92,7 @@ def trk_split_trksegs(segments, threshold):
             ))
             # Remove trksegs which have less than the 2 points needed to
             # define a line:
-            split_trksegs = [s for s in split_trksegs if len(s.points) < 2]
+            split_trksegs = [s for s in split_trksegs if len(s.points) > 1]
             
             updated_trksegs.extend(split_trksegs)
     return updated_trksegs
