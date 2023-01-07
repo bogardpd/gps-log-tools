@@ -2,6 +2,8 @@ import argparse
 import gpxpy
 import pandas as pd
 from pathlib import Path
+from dateutil.parser import isoparse
+from dateutil.tz import UTC
 import pytz
 import tomli
 
@@ -104,10 +106,13 @@ def trkseg_filter_timelog(segment, timesegs=None, raise_exception=True):
 def get_timelog_segments():
     """Parses the timelog and returns a dataframe."""
     LOG_PATH = Path(CONFIG['files']['absolute']['timelog']).expanduser()
-    df = pd.read_csv(LOG_PATH, parse_dates=['time'])
+    df = pd.read_csv(LOG_PATH, dtype={'time': str})
 
     # Convert to UTC.
-    df['time_utc'] = df['time'].dt.tz_convert(pytz.utc)
+    df['time_utc'] = df.apply(lambda x:
+        isoparse(x.time).astimezone(UTC),
+        axis=1,
+    )
     df = df.sort_values(by=['time_utc','status'])
 
     # Create a new segment whenever 0 (stopped) status changes to 1
