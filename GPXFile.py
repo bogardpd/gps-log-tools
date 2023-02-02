@@ -14,6 +14,7 @@ from filter_timelog import (
     trk_filter_timelog
 )
 from gpx_utilities import gpx_profile
+from remove_outliers import trk_remove_outliers
 from simplify_gpx import trkseg_simplify
 from split_gpx_time import trk_split_trksegs
 
@@ -168,8 +169,18 @@ class BadElfGPXFile(GPXFile):
             print("This file has already been processed. Skipping processing.")
             return False
         
+        root = Path(CONFIG['folders']['auto_root']).expanduser()
+        log_csv = root / CONFIG['files']['bad_elf_outliers_log']
+
         for trk in self.gpx.tracks:
             print(f"Converting track \"{trk.name}\"...")
+
+            # Remove outlier points.
+            trk = trk_remove_outliers(
+                trk,
+                str_gpx_filename=Path(self.gpx_path).parts[-1],
+                log_csv=log_csv,
+            )
 
             # Split trksegs with large time gaps into multiple trksegs.
             trk.segments = trk_split_trksegs(

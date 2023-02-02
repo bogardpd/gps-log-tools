@@ -9,9 +9,10 @@ bad_elf     = "Raw-Data/bad_elf"
 mytracks    = "Raw-Data/mytracks"
 
 [files]
-canonical_kml    = "driving_canonical.kml"
-canonical_backup = "./.Backup/driving_canonical.backup.kml"
-output_kmz       = "Driving.kmz"
+canonical_kml        = "driving_canonical.kml"
+canonical_backup     = "./.Backup/driving_canonical.backup.kml"
+output_kmz           = "Driving.kmz"
+bad_elf_outliers_log = "Documentation/Bad-Elf-Outliers.csv"
 
 [files.absolute]
 timelog = "~/iCloudDrive/Timelog/timelog.csv"
