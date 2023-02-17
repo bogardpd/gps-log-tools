@@ -48,7 +48,7 @@ foreach($Device in $Devices.GetEnumerator()) {
     $RawFileName = "$($UTCTime)_$($Device.Value).gpx"
     Write-Host "Renaming GPX to `"$($RawFileName)`"..."
     Rename-Item -Path "$($TargetFolderPath)\Current.gpx" -NewName $RawFileName
-    Write-Host "...done."  
+    Write-Host "...done."
   
     # Import GPX with Python script.
     python "$($ScriptPath)\update_kml.py" "$($TargetFolderPath)\$($RawFileName)" --nopause

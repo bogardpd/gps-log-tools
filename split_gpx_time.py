@@ -50,7 +50,7 @@ def trk_split_trksegs(segments, threshold):
     """Splits GPX trksegs with time gaps at or above threshold."""
     updated_trksegs = []
     for sn, segment in enumerate(segments):
-        print(f"  Splitting segment {sn+1}/{len(segments)}.")
+        print(f"Splitting segment {sn+1}/{len(segments)}.")
         
         # Create a list of point ids just after a large gap.
         gap_enum = enumerate(zip(segment.points[:-1],segment.points[1:]))
@@ -62,7 +62,7 @@ def trk_split_trksegs(segments, threshold):
 
         if len(gaps) == 0:
             updated_trksegs.append(segment)
-            print("    No large gaps found.")
+            print("No large gaps found.")
         else:
             starts = [0,*gaps.keys()]
             ends = [*gaps.keys(),len(segment.points)+1]

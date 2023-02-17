@@ -48,7 +48,7 @@ def gpx_remove_outliers(gpx, str_gpx_filename=None, log_csv=None):
 
 def trk_remove_outliers(track, str_gpx_filename=None, log_csv=None):
     """Removes outliers from a GPX track."""
-    print(f"  Removing outliers from {track.name}...")
+    print(f"Removing outliers from {track.name}...")
     for segment in track.segments:
         segment = trkseg_remove_time_travel(
             segment, str_gpx_filename=str_gpx_filename, log_csv=log_csv

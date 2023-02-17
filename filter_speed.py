@@ -79,9 +79,9 @@ def trk_filter_speed(trk,
 ):
     for sn, segment in enumerate(trk.segments):
         original_point_count = len(segment.points)
-        print(f"  Speed filtering segment {sn+1}/{len(trk.segments)}.")
+        print(f"Speed filtering segment {sn+1}/{len(trk.segments)}.")
         if len(segment.points) < rolling_window:
-            print("    Not enough points to perform a filter.")
+            print("Not enough points to perform a filter.")
         else:
             segment.points = filter_speed(
                 segment.points,
@@ -92,7 +92,7 @@ def trk_filter_speed(trk,
             )
             diff = original_point_count - len(segment.points)
             print(
-                f"    Removed {diff} points below {min_speed_m_s} m/s."
+                f"Removed {diff} points below {min_speed_m_s} m/s."
             )
     return trk
 
