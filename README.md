@@ -12,13 +12,16 @@ Each track is stored as a [Placemark](https://developers.google.com/kml/document
 
 Each Placemark contains a UTC [TimeStamp](https://developers.google.com/kml/documentation/kmlreference#timestamp) for the first point in the track, and a [LineString](https://developers.google.com/kml/documentation/kmlreference#linestring) for the track coordinates.
 
-Each Placemark may contain an optional description element.
+Each Placemark should contain a `name` element matching the timestamp, in `YYYY-MM-DD HH:MM:SSZ` format.
+
+Each Placemark may contain an optional `description` element.
 
 Each Placemark may contain optional metadata in an [ExtendedData](https://developers.google.com/kml/documentation/kmlreference#extendeddata) element:
 
 | displayName | value |
-|-------------|-------|
+|-------------|:------|
 | Creator     | Device or software used to create the track (e.g. `Bad Elf GPS Pro+`, `myTracks`) |
+| VehicleOwner | `personal` or `rental` |
 
 
 ### Folders
