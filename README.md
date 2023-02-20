@@ -2,6 +2,29 @@
 
 This repository contains a collection of scripts used for maintaining my [GPS driving logs](https://paulbogard.net/driving-logs/).
 
+## Canonical Driving Log
+
+The driving log is stored inside a [KML](https://developers.google.com/kml/documentation/kmlreference) file, with a location defined by the `files/canonical_kml` key in `config.toml`. All imports and changes are made to this file, and all exports are derived from this file.
+
+### Placemarks
+
+Each track is stored as a [Placemark](https://developers.google.com/kml/documentation/kmlreference#placemark) in the root [Document](https://developers.google.com/kml/documentation/kmlreference#document) element.
+
+Each Placemark contains a UTC [TimeStamp](https://developers.google.com/kml/documentation/kmlreference#timestamp) for the first point in the track, and a [LineString](https://developers.google.com/kml/documentation/kmlreference#linestring) for the track coordinates.
+
+Each Placemark may contain an optional description element.
+
+Each Placemark may contain optional metadata in an [ExtendedData](https://developers.google.com/kml/documentation/kmlreference#extendeddata) element:
+
+| displayName | value |
+|-------------|-------|
+| Creator     | Device or software used to create the track (e.g. `Bad Elf GPS Pro+`, `myTracks`) |
+
+
+### Folders
+
+The root Document element may contain one level of [Folder](https://developers.google.com/kml/documentation/kmlreference#folder) elements, each containing two or more Placemarks as described above. When creating KMZ exports of the driving data, the Placemarks in each Folder should be merged into a single track and placed in the root Document element.
+
 ## Import Scripts
 
 ### update_kml.py
@@ -52,17 +75,17 @@ The CSV file uses the following format:
 
 ```
 status,time
-+,2022-11-17T09:04:46-05:00
--,2022-11-17T10:09:00-05:00
-+,2022-11-17T11:14:39-05:00
--,2022-11-17T11:51:41-05:00
+1,2022-11-17T09:04:46-05:00
+0,2022-11-17T10:09:00-05:00
+1,2022-11-17T11:14:39-05:00
+0,2022-11-17T11:51:41-05:00
 ```
 
-`+` status indicates the start of a segment, and `-` indicates the stop of a segment. Tracks will be split into separate segments any time a `-` changes to a `+`, and any track points with a timestamp between adjacent `-` and `+` timestamps will be discarded.
+`1` status indicates the start of a segment, and `0` indicates the stop of a segment. Tracks will be split into separate segments any time a `0` changes to a `1`, and any track points with a timestamp between adjacent `0` and `1` timestamps will be discarded.
 
-### find_outliers.py
+### remove_outliers.py
 
-Occasionally, points will be recorded which are far outside of a driving track. This script calculates the speed between subsequent pairs of points, and looks for points where the speed from the previous point and to the next point exceeds a certain threshold, indicating that the point is likely an outlier.
+Occasionally, GPS data may contain errors such as points located far outside of a driving track, or with an incorrect timestamp. This script looks for such outlier points within a GPX file, and removes those points.
 
 ### rename_bad_elf_gpx.py
 
