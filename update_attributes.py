@@ -7,8 +7,15 @@ from pathlib import Path
 with open(Path(__file__).parent / "config.toml", 'rb') as f:
     CONFIG = tomli.load(f)
 
+root = Path(CONFIG['folders']['auto_root']).expanduser()
+CANONICAL_KML_FILE = root / CONFIG['files']['canonical_kml']
+
 def update_attributes(start_time, thru_time, attribute, value):
-    pass
+    print(start_time, thru_time, attribute, value)
+    print(CANONICAL_KML_FILE)
+
+def is_timezone_aware(d):
+    return (d.tzinfo is not None and d.tzinfo.utcoffset(d) is not None)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -35,6 +42,18 @@ if __name__ == "__main__":
         type=str,
         choices=['personal', 'rental']
     )
-
+    
     args = parser.parse_args()
-    print(args)
+    if not is_timezone_aware(args.start):
+        raise parser.error("Start must be timezone aware")
+    if not is_timezone_aware(args.thru):
+        raise parser.error("Thru must be timezone aware")
+    
+    if args.Creator is not None:
+        attr_value = ['Creator', args.Creator]
+    elif args.VehicleOwner is not None:
+        attr_value = ['VehicleOwner', args.VehicleOwner]
+    else:
+        raise parser.error("No argument/value pair was provided")
+    
+    update_attributes(args.start, args.thru, *attr_value)
