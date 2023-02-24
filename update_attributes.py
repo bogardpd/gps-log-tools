@@ -31,22 +31,44 @@ def update_attributes(start_time, thru_time, attribute, value):
         if is_in_range(placemark, start_time, thru_time)
     ]
 
-    print("Matching placemarks:")
-    placemarks_current_values = [
-        [placemark.name.text, get_data(placemark, attribute)]
+    if len(placemarks_in_range) == 0:
+        print("No tracks fall in the provided time range.")
+        quit()
+
+    print("Proposed changes:")
+    placemark_changes_table = [
+        [placemark.name.text, get_data(placemark, attribute), value]
         for placemark in placemarks_in_range
     ]
-    print(tabulate(placemarks_current_values))
+    print(tabulate(placemark_changes_table, headers=["Track","Current","New"]))
+    print(f"{len(placemarks_in_range)} track(s)")
 
-    # for placemark in doc.iterfind(".//Placemark", NSMAP):
-    #     when = placemark.find("./TimeStamp/when", NSMAP)
-    #     try:
-    #         ts = date_parse(when.text)
-    #     except (ParserError, TypeError):
-    #         continue
-    #     to_update = []
-    #     if start_time <= ts <= thru_time:
-    #         update_attribute(placemark, attribute, value)
+    proceed = input("Proceed with update? (y/n) ")
+    if proceed.lower() != "y":
+        print("No changes made.")
+        quit()
+
+    print("Proceeding with changes.")
+
+    for placemark in doc.iterfind(".//Placemark", NSMAP):
+        if is_in_range(placemark, start_time, thru_time):
+            # Use lxml objectify to add or update elements
+
+            data_elem = placemark.find(
+                f"./ExtendedData/Data[@name='{attribute}']/value",
+                NSMAP
+            )
+            if data_elem is None:
+                pass
+            else:
+                data_elem = value
+
+    # for placemark in placemarks_in_range:
+    #     update_placemark_attribute(placemark, attribute, value)
+
+    print(f"Updated attributes on {len(placemarks_in_range)} track(s).")
+
+    
 
 def is_in_range(placemark, start_time, thru_time):
     when = placemark.find("./TimeStamp/when", NSMAP)
@@ -59,19 +81,24 @@ def is_in_range(placemark, start_time, thru_time):
     return (start_time <= ts <= thru_time)
 
 def get_data(placemark, attribute):
-    data_elem = placemark.find(f"./ExtendedData/Data[@name='{attribute}']/value", NSMAP)
+    data_elem = placemark.find(
+        f"./ExtendedData/Data[@name='{attribute}']/value",
+        NSMAP
+    )
     if data_elem is None:
         return None
     else:
         return data_elem.text
 
-# def update_attribute(placemark, attribute, value):
-#     print(placemark.name.text)
-#     data_elem = placemark.find(f"./ExtendedData/{attribute}")
+# def update_placemark_attribute(placemark, attribute, value):
+#     data_elem = placemark.find(
+#         f"./ExtendedData/Data[@name='{attribute}']/value",
+#         NSMAP
+#     )
 #     if data_elem is None:
 #         print("Need to create data element")
 #     else:
-#         print("Need to update element")
+#         data_elem._setText(value)
             
 def is_timezone_aware(d):
     return (d.tzinfo is not None and d.tzinfo.utcoffset(d) is not None)
