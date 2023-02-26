@@ -13,6 +13,7 @@ class DrivingTrack:
         self.timestamp = id_timestamp # Starting timestamp is used as id
         self.coords = []
         self.creator = None
+        self.vehicle_owner = None
         self.description = None
         self.is_new = False
 
@@ -31,16 +32,25 @@ class DrivingTrack:
             ) for coord in self.coords
         )
         pm_name = self.timestamp.strftime(CONFIG['timestamps']['kml_name'])
+        ext_data = []
         if self.creator:
-            pm_extdata = KML.ExtendedData(
+            ext_data.append(
                 KML.Data(
                     KML.displayName("Creator"),
                     KML.value(self.creator),
                     name='creator',
                 )
             )
-        else:
-            pm_extdata = None
+        if self.vehicle_owner:
+            ext_data.append(
+                KML.Data(
+                    KML.displayName("Vehicle Owner"),
+                    KML.value(self.vehicle_owner),
+                    name='vehicle_owner',
+                )
+            )
+        pm_extdata = KML.ExtendedData(*ext_data)
+        
         if self.is_new:
             pm_name += " (new)"
         pm = KML.Placemark(

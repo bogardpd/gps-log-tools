@@ -1,33 +1,40 @@
 """Updates ExtendedData within the canonical driving log KML file."""
 import argparse
+import shutil
 import tomli
 from dateutil.parser import parse as date_parse
 from dateutil.parser import ParserError
+from lxml import etree
 from pathlib import Path
-from pykml import parser as kml_parser
 from tabulate import tabulate
 
 NSMAP = {None: "http://www.opengis.net/kml/2.2"}
-NAMES = {
+DISPLAY_NAMES = {
     'creator': "Creator",
     'vehicle_owner': "Vehicle Owner"
 }
 
-with open(Path(__file__).parent / "config.toml", 'rb') as f:
-    CONFIG = tomli.load(f)
-
-root = Path(CONFIG['folders']['auto_root']).expanduser()
-CANONICAL_KML_FILE = root / CONFIG['files']['canonical_kml']
-
 def update_attributes(start_time, thru_time, attribute, value):
-    print(start_time, thru_time, attribute, value)
-    
-    with open(CANONICAL_KML_FILE) as f:
-        doc = kml_parser.parse(f)
+    # Load config and determine file paths.
+    with open(Path(__file__).parent / "config.toml", 'rb') as f:
+        CONFIG = tomli.load(f)
+    root = Path(CONFIG['folders']['auto_root']).expanduser()
+    CANONICAL_KML_FILE = root / CONFIG['files']['canonical_kml']
+    CANONICAL_BACKUP_FILE = root / CONFIG['files']['canonical_backup']
 
+    # Parse existing canonical KML file.
+    parser = etree.XMLParser(remove_blank_text=True)
+    root = etree.parse(str(CANONICAL_KML_FILE), parser).getroot()
+    et = etree.ElementTree(root)
+    
+    # Find Placemarks within the provided time range and update them,
+    # returning a list of (old_value, placemark) tuples.
     placemarks_in_range = [
-        placemark
-        for placemark in doc.iterfind(".//Placemark", NSMAP)
+        (
+            get_data(placemark, attribute),
+            update_placemark(placemark, attribute, value),
+        )
+        for placemark in et.iterfind(".//Placemark", NSMAP)
         if is_in_range(placemark, start_time, thru_time)
     ]
 
@@ -37,48 +44,34 @@ def update_attributes(start_time, thru_time, attribute, value):
 
     print("Proposed changes:")
     placemark_changes_table = [
-        [placemark.name.text, get_data(placemark, attribute), value]
+        [
+            placemark[1].find("./name", NSMAP).text,
+            placemark[0],
+            value
+        ]
         for placemark in placemarks_in_range
     ]
     print(tabulate(placemark_changes_table, headers=["Track","Current","New"]))
     print(f"{len(placemarks_in_range)} track(s)")
 
-    proceed = input("Proceed with update? (y/n) ")
+    proceed = input("Write changes to file? (y/n) ")
     if proceed.lower() != "y":
+        # Do not write changes to file.
         print("No changes made.")
         quit()
 
-    print("Proceeding with changes.")
+    # Run backup.
+    shutil.copy(CANONICAL_KML_FILE, CANONICAL_BACKUP_FILE)
+    print(f"Backed up canonical data to {CANONICAL_BACKUP_FILE}.")
 
-    for placemark in doc.iterfind(".//Placemark", NSMAP):
-        if is_in_range(placemark, start_time, thru_time):
-            # Use lxml objectify to add or update elements
-
-            data_elem = placemark.find(
-                f"./ExtendedData/Data[@name='{attribute}']/value",
-                NSMAP
-            )
-            if data_elem is None:
-                pass
-            else:
-                data_elem = value
-
-    # for placemark in placemarks_in_range:
-    #     update_placemark_attribute(placemark, attribute, value)
-
-    print(f"Updated attributes on {len(placemarks_in_range)} track(s).")
-
-    
-
-def is_in_range(placemark, start_time, thru_time):
-    when = placemark.find("./TimeStamp/when", NSMAP)
-    if when is None:
-        return False
-    try:
-        ts = date_parse(when.text)
-    except (ParserError, TypeError):
-        return False
-    return (start_time <= ts <= thru_time)
+    # Write changes to file.
+    output_params = {
+        'pretty_print': True,
+        'xml_declaration': True,
+        'encoding': "utf-8",
+    }
+    et.write(str(CANONICAL_KML_FILE), **output_params)
+    print(f"Saved updates to {CANONICAL_KML_FILE}.")
 
 def get_data(placemark, attribute):
     data_elem = placemark.find(
@@ -90,18 +83,37 @@ def get_data(placemark, attribute):
     else:
         return data_elem.text
 
-# def update_placemark_attribute(placemark, attribute, value):
-#     data_elem = placemark.find(
-#         f"./ExtendedData/Data[@name='{attribute}']/value",
-#         NSMAP
-#     )
-#     if data_elem is None:
-#         print("Need to create data element")
-#     else:
-#         data_elem._setText(value)
-            
+def is_in_range(placemark, start_time, thru_time):
+    when = placemark.find("./TimeStamp/when", NSMAP)
+    if when is None:
+        return False
+    try:
+        ts = date_parse(when.text)
+    except (ParserError, TypeError):
+        return False
+    return (start_time <= ts <= thru_time)
+
 def is_timezone_aware(d):
     return (d.tzinfo is not None and d.tzinfo.utcoffset(d) is not None)
+
+def update_placemark(placemark, attribute, value):
+    """Updates and returns a placemark."""
+    existing_data = placemark.find(
+        f"./ExtendedData/Data[@name='{attribute}']/value",
+        NSMAP
+    )
+    if existing_data is None:
+        ext_data = placemark.find("./ExtendedData", NSMAP)
+        if ext_data is None:
+            ext_data = etree.SubElement(placemark, "ExtendedData")
+        data = etree.SubElement(ext_data, "Data", attrib={'name': attribute})
+        etree.SubElement(data, "displayName").text = DISPLAY_NAMES[attribute]
+        etree.SubElement(data, "value").text = value
+    else:
+        existing_data.text = value
+    return placemark           
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
