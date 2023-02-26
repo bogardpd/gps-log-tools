@@ -7,13 +7,9 @@ from dateutil.parser import ParserError
 from lxml import etree
 from pathlib import Path
 from tabulate import tabulate
+from DrivingTrack import EXT_DATA_ATTRIBUTES
 
 NSMAP = {None: "http://www.opengis.net/kml/2.2"}
-DISPLAY_NAMES = {
-    'creator':       "Creator",
-    'role':          "Role",
-    'vehicle_owner': "Vehicle Owner",
-}
 
 def update_attributes(start_time, thru_time, attribute, value):
     # Load config and determine file paths.
@@ -108,7 +104,8 @@ def update_placemark(placemark, attribute, value):
         if ext_data is None:
             ext_data = etree.SubElement(placemark, "ExtendedData")
         data = etree.SubElement(ext_data, "Data", attrib={'name': attribute})
-        etree.SubElement(data, "displayName").text = DISPLAY_NAMES[attribute]
+        display_name = EXT_DATA_ATTRIBUTES[attribute]
+        etree.SubElement(data, "displayName").text = display_name
         etree.SubElement(data, "value").text = value
     else:
         existing_data.text = value

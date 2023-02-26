@@ -7,6 +7,12 @@ import tomli
 with open(Path(__file__).parent / "config.toml", 'rb') as f:
     CONFIG = tomli.load(f)
 
+EXT_DATA_ATTRIBUTES = {
+    'creator':       "Creator",
+    'role':          "Role",
+    'vehicle_owner': "Vehicle Owner",
+}
+
 class DrivingTrack:
     """An instance of a driving log track."""
     def __init__(self, id_timestamp) -> None:
@@ -40,20 +46,14 @@ class DrivingTrack:
         )
         
         # Build ExtendedData.
-        ext_attributes = [
-            # (value, name, displayName)
-            (self.creator, "Creator", "creator"),
-            (self.role, "Role", "role"),
-            (self.vehicle_owner, "Vehicle Owner", "vehicle_owner")
-        ]
         ext_data_elements = [
             KML.Data(
-                KML.displayName(attribute[1]),
-                KML.value(attribute[0]),
-                name=attribute[2],
+                KML.displayName(display_name),
+                KML.value(getattr(self, attr_name)),
+                name=attr_name,
             )
-            for attribute in ext_attributes
-            if attribute[0]
+            for attr_name, display_name in EXT_DATA_ATTRIBUTES.items()
+            if getattr(self, attr_name)
         ]
         
         # Create Placemark.

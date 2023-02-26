@@ -20,7 +20,7 @@ from pykml.factory import KML_ElementMaker as KML
 from pykml.helpers import set_max_decimal_places
 from zipfile import ZipFile, ZIP_DEFLATED
 
-from DrivingTrack import DrivingTrack
+from DrivingTrack import DrivingTrack, EXT_DATA_ATTRIBUTES
 from GPXFile import GPXFile
 from gpx_utilities import gpx_profile
 
@@ -74,6 +74,12 @@ class DrivingLog:
 
         # Create Folders and Placemarks.
         log_data = []
+        folder_merge_attributes = [
+            'creator',
+            'role',
+            'vehicle_owner',
+            'description'
+        ]
         for log_element in self.tracks:
             if isinstance(log_element, list):
                 # This is a folder.
@@ -86,10 +92,11 @@ class DrivingLog:
                         for f in folder_tracks
                         for track_coords in f.coords
                     ]
-                    track.creator = folder_tracks[0].creator
-                    track.role = folder_tracks[0].role
-                    track.vehicle_owner = folder_tracks[0].vehicle_owner
-                    track.description = folder_tracks[0].description
+
+                    # Copy attributes from the first track in the folder.
+                    for attr in folder_merge_attributes:
+                        setattr(track, attr, getattr(folder_tracks[0], attr))
+                    
                     log_data.append(track.get_kml_placemark())
                 else:
                     # Create a folder of LineStrings.
@@ -172,21 +179,12 @@ class DrivingLog:
                 timestamp = timestamp.astimezone(timezone.utc)
                 track = DrivingTrack(timestamp)
 
-                creator = p.find("ExtendedData/Data[@name='creator']", NSMAP)
-                if creator is not None:
-                    track.creator = creator.find("value", NSMAP).text.strip()
-
-                role = p.find("ExtendedData/Data[@name='role']", NSMAP)
-                if role is not None:
-                    track.role = role.find("value", NSMAP).text.strip()
-
-                vehicle_owner = p.find(
-                    "ExtendedData/Data[@name='vehicle_owner']", NSMAP
-                )
-                if vehicle_owner is not None:
-                    track.vehicle_owner = vehicle_owner.find(
-                        "value", NSMAP
-                    ).text.strip()
+                # Build ExtendedData.
+                for attr in EXT_DATA_ATTRIBUTES.keys():
+                    data = p.find(f"ExtendedData/Data[@name='{attr}']", NSMAP)
+                    if data is not None:
+                        value = data.find("value", NSMAP).text.strip()
+                        setattr(track, attr, value)
                 
                 coords = p.find('LineString/coordinates', NSMAP).text.strip()
                 track.coords = list(
