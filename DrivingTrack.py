@@ -22,41 +22,43 @@ class DrivingTrack:
 
     def get_kml_placemark(self):
         """Returns a KML Placemark for the track."""
+        # Build name and description.
+        pm_name = self.timestamp.strftime(CONFIG['timestamps']['kml_name'])
+        if self.is_new:
+            pm_name += " (new)"
         pm_desc = (
             KML.description(self.description) if self.description
             else None
         )
+
+        # Build geometry.
         coord_str = " ".join(
             ",".join(
                 str(t) for t in coord[0:2] # Remove altitude if present
             ) for coord in self.coords
         )
-        pm_name = self.timestamp.strftime(CONFIG['timestamps']['kml_name'])
-        ext_data = []
-        if self.creator:
-            ext_data.append(
-                KML.Data(
-                    KML.displayName("Creator"),
-                    KML.value(self.creator),
-                    name='creator',
-                )
-            )
-        if self.vehicle_owner:
-            ext_data.append(
-                KML.Data(
-                    KML.displayName("Vehicle Owner"),
-                    KML.value(self.vehicle_owner),
-                    name='vehicle_owner',
-                )
-            )
-        pm_extdata = KML.ExtendedData(*ext_data)
         
-        if self.is_new:
-            pm_name += " (new)"
+        # Build ExtendedData.
+        ext_attributes = [
+            # (value, name, displayName)
+            (self.creator, "Creator", "creator"),
+            (self.vehicle_owner, "Vehicle Owner", "vehicle_owner")
+        ]
+        ext_data_elements = [
+            KML.Data(
+                KML.displayName(attribute[1]),
+                KML.value(attribute[0]),
+                name=attribute[2],
+            )
+            for attribute in ext_attributes
+            if attribute[0]
+        ]
+        
+        # Create Placemark.
         pm = KML.Placemark(
             KML.name(pm_name),
             pm_desc,
-            pm_extdata,
+            KML.ExtendedData(*ext_data_elements),
             KML.TimeStamp(
                 KML.when(self.timestamp.isoformat())
             ),
