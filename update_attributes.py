@@ -10,8 +10,9 @@ from tabulate import tabulate
 
 NSMAP = {None: "http://www.opengis.net/kml/2.2"}
 DISPLAY_NAMES = {
-    'creator': "Creator",
-    'vehicle_owner': "Vehicle Owner"
+    'creator':       "Creator",
+    'role':          "Role",
+    'vehicle_owner': "Vehicle Owner",
 }
 
 def update_attributes(start_time, thru_time, attribute, value):
@@ -135,6 +136,11 @@ if __name__ == "__main__":
         help="Name of device or software that created the track",
         type=str,
     )
+    attr_group.add_argument('--role',
+        help="driver or passenger",
+        type=str,
+        choices=['driver', 'passenger']
+    )
     attr_group.add_argument('--vehicle_owner',
         help="personal or rental",
         type=str,
@@ -149,6 +155,8 @@ if __name__ == "__main__":
     
     if args.creator is not None:
         attr_value = ['creator', args.creator]
+    elif args.role is not None:
+        attr_value = ['role', args.role]
     elif args.vehicle_owner is not None:
         attr_value = ['vehicle_owner', args.vehicle_owner]
     else:

@@ -13,6 +13,7 @@ class DrivingTrack:
         self.timestamp = id_timestamp # Starting timestamp is used as id
         self.coords = []
         self.creator = None
+        self.role = None
         self.vehicle_owner = None
         self.description = None
         self.is_new = False
@@ -42,6 +43,7 @@ class DrivingTrack:
         ext_attributes = [
             # (value, name, displayName)
             (self.creator, "Creator", "creator"),
+            (self.role, "Role", "role"),
             (self.vehicle_owner, "Vehicle Owner", "vehicle_owner")
         ]
         ext_data_elements = [

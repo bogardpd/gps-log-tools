@@ -22,6 +22,7 @@ Each Placemark may contain optional metadata in an [ExtendedData](https://develo
 |-------------|:------|
 | Creator     | Device or software used to create the track (e.g. `Bad Elf GPS Pro+`, `myTracks`) |
 | VehicleOwner | `personal` or `rental` |
+| Role | `driver` or `passenger` |
 
 
 ### Folders

@@ -87,6 +87,7 @@ class DrivingLog:
                         for track_coords in f.coords
                     ]
                     track.creator = folder_tracks[0].creator
+                    track.role = folder_tracks[0].role
                     track.vehicle_owner = folder_tracks[0].vehicle_owner
                     track.description = folder_tracks[0].description
                     log_data.append(track.get_kml_placemark())
@@ -170,9 +171,15 @@ class DrivingLog:
                 timestamp = parse(p.find('TimeStamp/when', NSMAP).text)
                 timestamp = timestamp.astimezone(timezone.utc)
                 track = DrivingTrack(timestamp)
+
                 creator = p.find("ExtendedData/Data[@name='creator']", NSMAP)
                 if creator is not None:
                     track.creator = creator.find("value", NSMAP).text.strip()
+
+                role = p.find("ExtendedData/Data[@name='role']", NSMAP)
+                if role is not None:
+                    track.role = role.find("value", NSMAP).text.strip()
+
                 vehicle_owner = p.find(
                     "ExtendedData/Data[@name='vehicle_owner']", NSMAP
                 )
@@ -180,6 +187,7 @@ class DrivingLog:
                     track.vehicle_owner = vehicle_owner.find(
                         "value", NSMAP
                     ).text.strip()
+                
                 coords = p.find('LineString/coordinates', NSMAP).text.strip()
                 track.coords = list(
                     tuple(
