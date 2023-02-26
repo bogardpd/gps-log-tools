@@ -45,7 +45,7 @@ class DrivingLog:
     def backup(self):
         """Backs up the canonical logfile."""
         shutil.copy(self.CANONICAL_KML_FILE, self.CANONICAL_BACKUP_FILE)
-        print(f"Backed up canonical data to \"{self.CANONICAL_BACKUP_FILE}\".")
+        print(f"Backed up canonical data to {self.CANONICAL_BACKUP_FILE}.")
 
     def export_kml(self, output_file, zipped=False, merge_folder_tracks=False):
         """
@@ -134,7 +134,7 @@ class DrivingLog:
             archive.writestr("doc.kml", output.getvalue())
         else:
             etree.ElementTree(kml_doc).write(str(output_file), **output_params)
-        print(f"Saved {filetype} to \"{output_file}\"!")
+        print(f"Saved {filetype} to {output_file}!")
 
     def import_gpx_files(self, gpx_files):
         """Imports GPX files and merges them into tracks."""
@@ -159,7 +159,7 @@ class DrivingLog:
         
     def load_canonical(self):
         """Parses the canonical KML file."""
-        print(f"Reading KML from \"{self.CANONICAL_KML_FILE}\"...")
+        print(f"Reading KML from {self.CANONICAL_KML_FILE}...")
 
         def placemarks_to_tracks(node):
             """
