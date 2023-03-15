@@ -18,11 +18,11 @@ Each Placemark may contain an optional `description` element.
 
 Each Placemark may contain optional metadata in an [ExtendedData](https://developers.google.com/kml/documentation/kmlreference#extendeddata) element:
 
-| name          | value |
+| Name          | Value |
 |---------------|:------|
 | creator       | Device or software used to create the track (e.g. `Bad Elf GPS Pro+`, `myTracks`) |
-| role          | `driver` or `passenger` |
-| vehicle_owner | `personal` or `rental` |
+| role          | `driver`,<br>`passenger` |
+| vehicle_owner | `personal` (the log owner’s own vehicle),<br>`private` (a privately owned vehicle, such as a friend’s car),<br>`rental` (a rental vehicle) |
 
 
 ### Folders

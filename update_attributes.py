@@ -139,9 +139,9 @@ if __name__ == "__main__":
         choices=['driver', 'passenger']
     )
     attr_group.add_argument('--vehicle_owner',
-        help="personal or rental",
+        help="personal, private, or rental",
         type=str,
-        choices=['personal', 'rental']
+        choices=['personal', 'private', 'rental']
     )
     
     args = parser.parse_args()
