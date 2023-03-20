@@ -5,7 +5,9 @@ auto_root   = "~/OneDrive/Projects/Driving-Logs"
 import_root = "~/OneDrive/Import/"
 
 [folders.raw]
+_default    = "Raw-Data/_default"
 bad_elf     = "Raw-Data/bad_elf"
+garmin      = "Raw-Data/garmin"
 mytracks    = "Raw-Data/mytracks"
 
 [files]
