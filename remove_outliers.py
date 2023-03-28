@@ -143,7 +143,7 @@ def trkseg_remove_time_travel(segment, str_gpx_filename=None, log_csv=None):
 def trkseg_remove_teleportation(segment, str_gpx_filename=None, log_csv=None):
     """Removes position teleportation outliers from a GPX track segment."""
     
-    # Generate list of points immediately preceeding a high speed.
+    # Generate list of points immediately preceding a high speed.
     points_before_speeding = list(
         i
         for i, (p1, p2)
@@ -209,6 +209,9 @@ def speed_m_s(p1, p2):
         (p1.latitude, p1.longitude), (p2.latitude, p2.longitude)
     ).meters
     timediff = (p2.time - p1.time).total_seconds()
+    if timediff == 0:
+        print(f"No timediff at {p1.time}.")
+        return 0
     return (dist / timediff)
 
 
