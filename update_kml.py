@@ -1,7 +1,8 @@
 """Updates canonical KML file and imports GPX if provided.
 
 This script will generate both a KML file (to act as the canonical
-storage for driving data in a human readable format) and a KMZ file with additional processing (e.g. merging tracks in folders). The KMLfile will
+storage for driving data in a human readable format) and a KMZ file with
+additional processing (e.g. merging tracks in folders). The KMLfile will
 be read when merging new data.
 """
 
