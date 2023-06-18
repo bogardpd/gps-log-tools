@@ -10,12 +10,19 @@ bad_elf     = "Raw-Data/bad_elf"
 garmin      = "Raw-Data/garmin"
 mytracks    = "Raw-Data/mytracks"
 
+# Files relative to the auto_root folder.
 [files]
 canonical_kml        = "driving_canonical.kml"
+canonical_gpkg       = "Driving-Log.gpkg"
 canonical_backup     = "./.Backup/driving_canonical.backup.kml"
 output_kmz           = "Driving.kmz"
 bad_elf_outliers_log = "Documentation/Bad-Elf-Outliers.csv"
 
+# Files relative to the script folder.
+[files.script]
+gpkg_template = "./templates/Driving-Log.template.gpkg"
+
+# Files in an absolute location.
 [files.absolute]
 timelog = "~/iCloudDrive/Timelog/timelog.csv"
 
@@ -28,6 +35,8 @@ kml_name = "%Y-%m-%d %H:%M:%SZ"
 bad_elf  = "%Y%m%dT%H%M%SZ"
 mytracks = "%Y%m%dT%H%M%SZ"
 
+
+# MULTIPLIERS
 
 # Multiplier needed to convert each device's native speed unit into meters/sec.
 [speed_multiplier]

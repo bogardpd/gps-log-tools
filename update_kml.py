@@ -2,12 +2,13 @@
 
 This script will generate both a KML file (to act as the canonical
 storage for driving data in a human readable format) and a KMZ file with
-additional processing (e.g. merging tracks in folders). The KMLfile will
-be read when merging new data.
+additional processing (e.g. merging tracks in folders). The KML file
+will be read when merging new data.
 """
 
 import argparse
 import io
+import os
 import shutil
 import sys
 import traceback
@@ -37,11 +38,18 @@ class DrivingLog:
         self.tracks = []
 
         root = Path(CONFIG['folders']['auto_root']).expanduser()
+        script_root = Path(__file__).parent
         self.CANONICAL_KML_FILE = root / CONFIG['files']['canonical_kml']
+        self.CANONICAL_GPKG_FILE = root / CONFIG['files']['canonical_gpkg']
         self.CANONICAL_BACKUP_FILE = root / CONFIG['files']['canonical_backup']
         self.OUTPUT_KMZ_FILE = root / CONFIG['files']['output_kmz']
+        self.GPKG_TEMPLATE = (
+            script_root / CONFIG['files']['script']['gpkg_template']
+        )
 
         self.ignore = CONFIG['import']['ignore']
+
+        self.verify_logfile()
         
     def backup(self):
         """Backs up the canonical logfile."""
@@ -257,6 +265,14 @@ class DrivingLog:
             else:
                 timestamps.append(track.timestamp)
         return timestamps
+    
+    def verify_logfile(self):
+        """Checks for logfile and copies from template if needed."""
+        if os.path.exists(self.CANONICAL_GPKG_FILE):
+            print(f"Logfile is present at {self.CANONICAL_GPKG_FILE}.")
+        else:
+            shutil.copy(self.GPKG_TEMPLATE, self.CANONICAL_GPKG_FILE)
+            print(f"Copied logfile {self.CANONICAL_GPKG_FILE} from template.")
 
     def __merge_tracks(self, new_tracks):
         """
