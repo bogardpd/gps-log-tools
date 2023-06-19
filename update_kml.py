@@ -8,6 +8,8 @@ will be read when merging new data.
 
 import argparse
 import geopandas as gpd
+import pandas as pd
+import sqlite3
 import io
 import os
 import shutil
@@ -56,9 +58,13 @@ class DrivingLog:
     def append_tracks_to_gpkg(self, driving_tracks_list):
         """Appends a list of DrivingTracks to the GeoPackage logfile."""
         records = []
+        existing_timestamps = self.existing_timestamps()
         for dt in driving_tracks_list:
-            # TODO: Check that track timestamp doesn't already exist in
-            # GeoPackage.
+            # Check that the track's timestamp doesn't already exist in
+            # the track log.
+            if dt.source_track_timestamp in existing_timestamps:
+                print(f"Track {dt} is already in the logfile.")
+                continue
 
             # Ensure track has at least two points (required for shapely
             # multilinestrings).
@@ -76,18 +82,36 @@ class DrivingLog:
                 'source_track_timestamp': dt.source_track_timestamp,
             })
 
-        gdf = gpd.GeoDataFrame(records, geometry="geometry", crs="EPSG:4326")
-        gdf.to_file(self.CANONICAL_GPKG_FILE,
-            driver="GPKG",
-            layer="driving_tracks",
-            mode='a',
+        if len(records) > 0:
+            gdf = gpd.GeoDataFrame(
+                records,
+                geometry="geometry",
+                crs="EPSG:4326"
+            )
+            gdf.to_file(
+                self.CANONICAL_GPKG_FILE,
+                driver="GPKG",
+                layer="driving_tracks",
+                mode='a',
+            )
+        print(
+            f"Appended {len(records)} track(s) to {self.CANONICAL_GPKG_FILE}."
         )
-        print(f"Appended {len(gdf)} track(s) to {self.CANONICAL_GPKG_FILE}.")
 
     def backup(self):
         """Backs up the canonical logfile."""
         shutil.copy(self.CANONICAL_KML_FILE, self.CANONICAL_BACKUP_FILE)
         print(f"Backed up canonical data to {self.CANONICAL_BACKUP_FILE}.")
+
+    def existing_timestamps(self):
+        con = sqlite3.connect(self.CANONICAL_GPKG_FILE)
+        query = """
+            SELECT DISTINCT source_track_timestamp
+            FROM driving_tracks
+        """
+        df = pd.read_sql(query, con)
+        con.close()
+        return [parse(d) for d in df['source_track_timestamp'].to_list()]
 
     def export_kml(self, output_file, zipped=False, merge_folder_tracks=False):
         """
