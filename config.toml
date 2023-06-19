@@ -48,7 +48,7 @@ mytracks = 0.277778 # km/h
 # IMPORT CONFIGURATION
 
 [import]
-min_points = 1 # Only keep linestrings with at least this many points
+min_points = 2 # Only keep linestrings with at least this many points
   
 [import.gpx]
 

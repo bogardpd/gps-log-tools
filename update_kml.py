@@ -7,6 +7,7 @@ will be read when merging new data.
 """
 
 import argparse
+import geopandas as gpd
 import io
 import os
 import shutil
@@ -20,6 +21,7 @@ from lxml import etree
 from pathlib import Path
 from pykml.factory import KML_ElementMaker as KML
 from pykml.helpers import set_max_decimal_places
+from shapely import multilinestrings
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from DrivingTrack import DrivingTrack, EXT_DATA_ATTRIBUTES
@@ -50,7 +52,38 @@ class DrivingLog:
         self.ignore = CONFIG['import']['ignore']
 
         self.verify_logfile()
-        
+    
+    def append_tracks_to_gpkg(self, driving_tracks_list):
+        """Appends a list of DrivingTracks to the GeoPackage logfile."""
+        records = []
+        for dt in driving_tracks_list:
+            # TODO: Check that track timestamp doesn't already exist in
+            # GeoPackage.
+
+            # Ensure track has at least two points (required for shapely
+            # multilinestrings).
+            if len(dt.coords) < 2:
+                continue
+
+            records.append({
+                'geometry': multilinestrings([dt.coords]),
+                'utc_start': dt.utc_start,
+                'utc_stop': dt.utc_stop,
+                'creator': dt.creator,
+                'role': dt.role,
+                'vehicle_owner': dt.vehicle_owner,
+                'comments': dt.description,
+                'source_track_timestamp': dt.source_track_timestamp,
+            })
+
+        gdf = gpd.GeoDataFrame(records, geometry="geometry", crs="EPSG:4326")
+        gdf.to_file(self.CANONICAL_GPKG_FILE,
+            driver="GPKG",
+            layer="driving_tracks",
+            mode='a',
+        )
+        print(f"Appended {len(gdf)} track(s) to {self.CANONICAL_GPKG_FILE}.")
+
     def backup(self):
         """Backs up the canonical logfile."""
         shutil.copy(self.CANONICAL_KML_FILE, self.CANONICAL_BACKUP_FILE)
@@ -167,11 +200,14 @@ class DrivingLog:
             file_tracks = gpx_file.driving_tracks
             for ft in file_tracks:
                 gpx_tracks[ft.timestamp] = ft
-        gpx_tracks = list(gpx_tracks.values())
+        driving_tracks_list = list(gpx_tracks.values())
+
+        # Add new tracks to GeoPackage.
+        self.append_tracks_to_gpkg(driving_tracks_list)
 
         # Merge GPX tracks into DrivingLog tracks, keeping original
         # DrivingLog track if two tracks have the same timestamp.
-        self.__merge_tracks(gpx_tracks)
+        self.__merge_tracks(driving_tracks_list)
         
     def load_canonical(self):
         """Parses the canonical KML file."""

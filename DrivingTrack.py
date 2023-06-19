@@ -18,10 +18,13 @@ class DrivingTrack:
     def __init__(self, id_timestamp) -> None:
         self.timestamp = id_timestamp # Starting timestamp is used as id
         self.coords = []
+        self.utc_start = None
+        self.utc_stop = None
         self.creator = None
         self.role = None
         self.vehicle_owner = None
         self.description = None
+        self.source_track_timestamp = None
         self.is_new = False
 
     def __repr__(self) -> str:
