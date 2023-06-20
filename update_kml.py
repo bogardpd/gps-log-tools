@@ -46,6 +46,9 @@ class DrivingLog:
         self.CANONICAL_KML_FILE = root / CONFIG['files']['canonical_kml']
         self.CANONICAL_GPKG_FILE = root / CONFIG['files']['canonical_gpkg']
         self.CANONICAL_BACKUP_FILE = root / CONFIG['files']['canonical_backup']
+        self.CANONICAL_BACKUP_GPKG_FILE = (
+            root / CONFIG['files']['canonical_backup_gpkg']
+        )
         self.OUTPUT_KMZ_FILE = root / CONFIG['files']['output_kmz']
         self.GPKG_TEMPLATE = (
             script_root / CONFIG['files']['script']['gpkg_template']
@@ -101,7 +104,12 @@ class DrivingLog:
     def backup(self):
         """Backs up the canonical logfile."""
         shutil.copy(self.CANONICAL_KML_FILE, self.CANONICAL_BACKUP_FILE)
-        print(f"Backed up canonical data to {self.CANONICAL_BACKUP_FILE}.")
+        print(f"Backed up canonical KML to {self.CANONICAL_BACKUP_FILE}.")
+
+        shutil.copy(self.CANONICAL_GPKG_FILE, self.CANONICAL_BACKUP_GPKG_FILE)
+        print(
+            f"Backed up canonical GPKG to {self.CANONICAL_BACKUP_GPKG_FILE}."
+        )
 
     def existing_timestamps(self):
         con = sqlite3.connect(self.CANONICAL_GPKG_FILE)

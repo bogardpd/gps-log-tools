@@ -12,11 +12,12 @@ mytracks    = "Raw-Data/mytracks"
 
 # Files relative to the auto_root folder.
 [files]
-canonical_kml        = "driving_canonical.kml"
-canonical_gpkg       = "Driving-Log.gpkg"
-canonical_backup     = "./.Backup/driving_canonical.backup.kml"
-output_kmz           = "Driving.kmz"
-bad_elf_outliers_log = "Documentation/Bad-Elf-Outliers.csv"
+canonical_kml         = "driving_canonical.kml"
+canonical_gpkg        = "Driving-Log.gpkg"
+canonical_backup      = "./.Backup/driving_canonical.backup.kml"
+canonical_backup_gpkg = "./.Backup/Driving-Log.backup.gpkg"
+output_kmz            = "Driving.kmz"
+bad_elf_outliers_log  = "Documentation/Bad-Elf-Outliers.csv"
 
 # Files relative to the script folder.
 [files.script]
