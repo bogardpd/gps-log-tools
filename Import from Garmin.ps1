@@ -51,7 +51,7 @@ foreach($Device in $Devices.GetEnumerator()) {
     Write-Host "...done."
   
     # Import GPX with Python script.
-    python "$($ScriptPath)\update_kml.py" "$($TargetFolderPath)\$($RawFileName)" --nopause
+    python "$($ScriptPath)\import_gpx.py" "$($TargetFolderPath)\$($RawFileName)" --nopause
 
   } else {
     

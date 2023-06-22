@@ -7,7 +7,8 @@ from datetime import timezone
 from pathlib import Path
 from zipfile import ZipFile
 from rename_bad_elf_gpx import rename_bad_elf_gpx
-from update_kml import update_kml
+from import_gpx import import_gpx
+from export_kmz import export_kmz
 from GPXFile import GPXFile
 
 with open(Path(__file__).parent / "config.toml", 'rb') as f:
@@ -49,9 +50,17 @@ def main():
         "Updating KML with imported files..." +
         colorama.Style.RESET_ALL
     )
-    update_kml(gpx_files)
+    import_gpx(gpx_files)
 
-    # # Move GPX files to raw and rename if needed.
+    # Export an updated KMZ file.
+    print(
+        colorama.Style.BRIGHT +
+        f"Exporting KMZ..." +
+        colorama.Style.RESET_ALL
+    )
+    export_kmz()
+
+    # Move GPX files to raw and rename if needed.
     print(
         colorama.Style.BRIGHT +
         f"Moving GPX files to raw data folder..." +

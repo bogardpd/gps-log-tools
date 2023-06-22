@@ -4,54 +4,42 @@ This repository contains a collection of scripts used for maintaining my [GPS dr
 
 ## Canonical Driving Log
 
-The driving log is stored inside a [KML](https://developers.google.com/kml/documentation/kmlreference) file, with a location defined by the `files/canonical_kml` key in `config.toml`. All imports and changes are made to this file, and all exports are derived from this file.
+The driving log is stored inside a [GeoPackage](https://www.geopackage.org/) file, with a location defined by the `files/canonical_gpkg` key in `config.toml`. All imports and changes are made to this file, and all exports are derived from this file.
 
-### Placemarks
+### GeoPackage Structure
 
-Each track is stored as a [Placemark](https://developers.google.com/kml/documentation/kmlreference#placemark) in the root [Document](https://developers.google.com/kml/documentation/kmlreference#document) element.
+The driving tracks are stored in a `driving_tracks` MultiLineString layer, with the following fields:
 
-Each Placemark contains a UTC [TimeStamp](https://developers.google.com/kml/documentation/kmlreference#timestamp) for the first point in the track, and a [LineString](https://developers.google.com/kml/documentation/kmlreference#linestring) for the track coordinates.
+| Name          | QGIS Type | Value |
+|---------------|:-----|:------|
+| **fid**           | Integer64  | Feature ID |
+| **utc_start**     | DateTime | UTC timestamp for the beginning of the track |
+| **utc_stop**      | DateTime | UTC timestamp for the end of the track |
+| **creator**       | String   | Device or software used to create the track (e.g. **Bad Elf GPS Pro+** or **myTracks**) |
+| **role**          | String   | **driver** or **passenger** |
+| **vehicle_owner** | String   | **personal** (the log owner’s own vehicle), **private** (a privately owned vehicle, such as a friend’s car), or **rental** (a rental vehicle) |
+| **comments**      | String   | Optional comments |
+| **source_track_timestamp** | DateTime | UTC timestamp for the first point of the source GPX track before any processing, with milliseconds dropped. Used to identify a track to determine if it has already been imported. |
 
-Each Placemark should contain a `name` element matching the timestamp, in `YYYY-MM-DD HH:MM:SSZ` format.
+## Import and Export Scripts
 
-Each Placemark may contain an optional `description` element.
+### import_gpx.py
 
-Each Placemark may contain optional metadata in an [ExtendedData](https://developers.google.com/kml/documentation/kmlreference#extendeddata) element:
+This script imports GPX files into my canonical GeoPackage driving log file (by providing one or more GPX files as arguments).
 
-| Name          | Value |
-|---------------|:------|
-| creator       | Device or software used to create the track (e.g. `Bad Elf GPS Pro+`, `myTracks`) |
-| role          | `driver`,<br>`passenger` |
-| vehicle_owner | `personal` (the log owner’s own vehicle),<br>`private` (a privately owned vehicle, such as a friend’s car),<br>`rental` (a rental vehicle) |
-
-
-### Folders
-
-The root Document element may contain one level of [Folder](https://developers.google.com/kml/documentation/kmlreference#folder) elements, each containing two or more Placemarks as described above. When creating KMZ exports of the driving data, the Placemarks in each Folder should be merged into a single track and placed in the root Document element.
-
-## Import Scripts
-
-### update_kml.py
-
-This script is the heart of my GPS processing; it maintains my [canonical driving KML file](https://paulbogard.net/blog/20210209-how-i-store-my-driving-logs-2021/), imports GPX files into it (by providing one or more GPX files as arguments), and exports a processed KMZ file.
-
-The import function ensures duplicate tracks are not imported (tracks are uniquely identified by the UTC timestamp of their first waypoint). As tracks may have been edited in the canonical KML file after import (see below), in the case of a matching timestamp, the existing track in the canonical KML file is kept and the matching GPX track is ignored.
+The import function ensures duplicate tracks are not imported (tracks are uniquely identified by the UTC timestamp of their first waypoint, before any processing). As tracks may have been edited in the canonical log file after import (see below), in the case of a matching timestamp, the existing track in the canonical log file is kept and the matching GPX track is ignored.
 
 The import function also does some processing on the GPX data due to the idiosyncrasies of the device that generated the GPS track. Which processing is performed on each device’s tracks is defined in `config.toml`.
 
-Since I’m maintaining several decades of driving data, I want my KML files to be more optimized for size than Google Earth typically saves them as. In particular:
-
-- Google Earth by default maintains the a separate style for each [Placemark](https://developers.google.com/kml/documentation/kmlreference#placemark), even if the styles are identical. Since all of my Placemarks are tracks with the same line width and color, this script generates KML/KMZ files with the style defined once, and every Placemark using it.
-- By default, most GPS logging data includes latitude, longitude, and altitude. However, for my driving log, altitudes are irrelevant (all of my tracks have [`altitudeMode`](https://developers.google.com/kml/documentation/altitudemode) set as `clampToGround`). This script strips all altitude values, saving a significant amount of space over millions of waypoints.
-
-Sometimes, it’s necessary to manually edit waypoints in the canonical file (for example, noisy data that it was not possible to remove with automated processing upon import). Likewise, it’s sometimes necessary to [merge two consecutive tracks together](https://paulbogard.net/blog/20211221-fixing-driving-log-inter-track-gaps/) (which can be done by grouping tracks that need to be merged into KML sub-folders). Once that editing has been done in the canonical KML file, this script can be run without (or with) import arguments to apply the above optimizations to the newly-edited tracks.
+By default, most GPS logging data includes latitude, longitude, and altitude. However, for my driving log, altitudes are irrelevant, as the tracks can be assumed to be clamped to the ground. This script strips all altitude values, saving a significant amount of space over millions of waypoints.
 
 ### process_import_folder.py
 
 When downloading tracks from my Bad Elf GPS Pro+ datalogger or the myTracks app, I end up with either individual GPX files or a zipfile of GPX files. This script:
 
 - looks at a designated import folder for any zipfiles matching Bad Elf or myTracks naming conventions, extracts the GPX files, and deletes the zipfiles,
-- imports all GPX files in the import folder using `update_kml.py`, and
+- imports all GPX files in the import folder using `import_gpx.py`,
+- exports a KMZ file using `export_kmz.py`, and
 - moves all the GPX files to an archival folder, renaming them to a particular UTC timestamp format as necessary.
 
 ### Import from Garmin.ps1
@@ -59,11 +47,20 @@ When downloading tracks from my Bad Elf GPS Pro+ datalogger or the myTracks app,
 Garmin automotive devices store all driving tracks in a single `current.gpx` file; the oldest tracks are removed as new tracks are recorded to maintain a roughly constant file size. This PowerShell script is designed to import this file on Windows, by:
 
 - copies the `current.gpx` to an archive folder, renaming it with the UTC timestamp of the time the script is run, and
-- imports the archived GPX file using `update_kml.py`.
+- imports the archived GPX file using `import_gpx.py`.
 
 ### MacOS Download Garmin GPX.scpt
 
-I’ve had difficulty mounting Garmin devices as directories under recent versions of MacOS. Instead, to get the Garmin’s `current.gpx` file, this AppleScript runs a backup using the Garmin Express application, then opens the backup folder (which contains `current.gpx`) in Finder. From there, `current.gpx` can be imported using `update_kml.py`.
+I’ve had difficulty mounting Garmin devices as directories under recent versions of MacOS. Instead, to get the Garmin’s `current.gpx` file, this AppleScript runs a backup using the Garmin Express application, then opens the backup folder (which contains `current.gpx`) in Finder. From there, `current.gpx` can be imported using `import_gpx.py`.
+
+### export_kmz.py
+
+This script exports the current canonical driving log into a KMZ file for use in Google Earth.
+
+Since I’m maintaining several decades of driving data, I want my KML files to be more optimized for size than Google Earth typically saves them as. In particular:
+
+- Google Earth by default maintains the a separate style for each [Placemark](https://developers.google.com/kml/documentation/kmlreference#placemark), even if the styles are identical. Since all of my Placemarks are tracks with the same line width and color, this script generates KML/KMZ files with the style defined once, and every Placemark using it.
+- All latitudes and longitudes are rounded to 6 decimal places.
 
 ## Utility Scripts
 
