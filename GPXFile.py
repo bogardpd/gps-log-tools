@@ -133,27 +133,12 @@ class GPXFile():
     
     def _trkseg_append_driving_track(self, trk, trkseg, timestamp):
         """Appends a trkseg as a new DrivingTrack."""
-        coords = list(
-            (p.longitude, p.latitude) for p in trkseg.points
-        )
-    
-        if len(coords) >= CONFIG['import']['min_points']:
-            new_track = DrivingTrack(timestamp)
-            new_track.coords = coords
-            new_track.utc_start = (
-                trkseg.points[0].time.astimezone(timezone.utc)
-            )
-            new_track.utc_stop =  (
-                trkseg.points[-1].time.astimezone(timezone.utc)
-            )
+        if len(trkseg.points) >= CONFIG['import']['min_points']:
+            new_track = DrivingTrack(timestamp.astimezone(timezone.utc))
+            new_track.load_gpx_trkseg(trkseg)
             new_track.description = trk.description
             new_track.creator = self.gpx.creator
-            new_track.is_new = True
-            new_track.source_track_timestamp = (
-                timestamp.astimezone(timezone.utc)
-            )
-
-        self.driving_tracks.append(new_track)
+            self.driving_tracks.append(new_track)
 
     def _trkseg_get_timestamp(self, trk, trkseg):
         """Gets the time of the first trkpt of a trkseg."""

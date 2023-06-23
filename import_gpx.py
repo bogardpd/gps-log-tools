@@ -44,27 +44,16 @@ class DrivingLog:
         for dt in driving_tracks_list:
             # Check that the track's timestamp doesn't already exist in
             # the track log.
-            if dt.source_track_timestamp in existing_timestamps:
+            if dt.timestamp in existing_timestamps:
                 print(f"Track {dt} is already in the logfile.")
                 continue
 
-            ## TODO: Check if track or trackseg is in ignore list.
-
-            # Ensure track has at least two points (required for shapely
-            # multilinestrings).
-            if len(dt.coords) < 2:
+            # Ensure track has geometry.
+            if dt.geometry is None:
+                print(f"Track {dt} has no geometry (likely < 2 points).")
                 continue
 
-            records.append({
-                'geometry': multilinestrings([dt.coords]),
-                'utc_start': dt.utc_start,
-                'utc_stop': dt.utc_stop,
-                'creator': dt.creator,
-                'role': dt.role,
-                'vehicle_owner': dt.vehicle_owner,
-                'comments': dt.description,
-                'source_track_timestamp': dt.source_track_timestamp,
-            })
+            records.append(dt.get_record())
 
         if len(records) > 0:
             gdf = gpd.GeoDataFrame(
