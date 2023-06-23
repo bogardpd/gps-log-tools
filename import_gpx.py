@@ -2,8 +2,6 @@
 
 import argparse
 import geopandas as gpd
-import pandas as pd
-import sqlite3
 import os
 import shutil
 import sys
@@ -40,19 +38,10 @@ class DrivingLog:
     def append_tracks_to_gpkg(self, driving_tracks_list):
         """Appends a list of DrivingTracks to the GeoPackage logfile."""
         records = []
-        existing_timestamps = self.existing_timestamps()
         for dt in driving_tracks_list:
-            # Check that the track's timestamp doesn't already exist in
-            # the track log.
-            if dt.timestamp in existing_timestamps:
-                print(f"Track {dt} is already in the logfile.")
-                continue
-
-            # Ensure track has geometry.
             if dt.geometry is None:
                 print(f"Track {dt} has no geometry (likely < 2 points).")
                 continue
-
             records.append(dt.get_record())
 
         if len(records) > 0:
@@ -78,17 +67,6 @@ class DrivingLog:
             f"Backed up canonical GPKG to {self.CANONICAL_BACKUP_FILE}."
         )
 
-    def existing_timestamps(self):
-        """Gets a list of existing source track timestamps."""
-        con = sqlite3.connect(self.CANONICAL_GPKG_FILE)
-        query = """
-            SELECT DISTINCT source_track_timestamp
-            FROM driving_tracks
-        """
-        df = pd.read_sql(query, con)
-        con.close()
-        return [parse(d) for d in df['source_track_timestamp'].to_list()]
-
     def import_gpx_files(self, gpx_files):
         """Imports GPX files into the GeoPackage driving log."""
         if len(gpx_files) == 0:
@@ -103,7 +81,10 @@ class DrivingLog:
             gpx_file.process()
             file_tracks = gpx_file.driving_tracks
             for ft in file_tracks:
-                gpx_tracks[ft.timestamp] = ft
+                # Use utc_start as track identifier, since processed
+                # tracks may have already been split from the same
+                # DrivingTrack timestamp.
+                gpx_tracks[ft.utc_start] = ft
         driving_tracks_list = list(gpx_tracks.values())
 
         # Add new tracks to GeoPackage.

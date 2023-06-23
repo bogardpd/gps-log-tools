@@ -87,7 +87,7 @@ def main():
             if new_filepath.exists():
                 print(
                     colorama.Fore.YELLOW + 
-                    f"`{file.name}` already exists. Skipping this file." +
+                    f"\"{file.name}\" already exists. Skipping this file." +
                     colorama.Style.RESET_ALL
                 )
             else:

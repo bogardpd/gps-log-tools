@@ -1,10 +1,13 @@
 """Classes for working with GPX files."""
 
+import gpxpy
+import pandas as pd
+import sqlite3
+import tomli
+
 from datetime import timedelta, timezone
 from dateutil.parser import parse
-import gpxpy
 from pathlib import Path
-import tomli
 
 from DrivingTrack import DrivingTrack
 from filter_speed import trk_filter_speed
@@ -24,6 +27,10 @@ with open(Path(__file__).parent / "config.toml", 'rb') as f:
 class GPXFile():
     """A generic GPX file."""
     def __init__(self, gpx_path, gpx=None) -> None:
+        self.GPKG_FILE = (
+            Path(CONFIG['folders']['auto_root']).expanduser()
+            / CONFIG['files']['canonical_gpkg']
+        )
         if gpx is None:
             with open(gpx_path, 'r') as f:
                 gpx = gpxpy.parse(f)
@@ -32,6 +39,7 @@ class GPXFile():
         self.ignore = CONFIG['import']['ignore']
         self.is_processed = False
         self.driving_tracks = []
+        self.existing_trk_timestamps = self._existing_trk_timestamps()
         self.profile = '_default'
         self.import_config = CONFIG['import']['gpx'][self.profile]
     
@@ -62,14 +70,34 @@ class GPXFile():
         for trk in self.gpx.tracks:
             print(f"Converting track \"{trk.name}\"...")
 
-            for trkseg in trk.segments:
-                # Get timestamp before any trkseg processing.
-                timestamp = self._trkseg_get_timestamp(trk, trkseg)
+            # Check if track is already in log.
+            if self._trk_in_log(trk):
+                self._print_track_already_in_log(trk)
+                continue
 
+            # Get timestamp before any trkseg processing.
+            timestamp = self._trk_get_timestamp(trk)
+
+            for trkseg in trk.segments:
                 # Append processed trkseg to driving tracks list.
                 self._trkseg_append_driving_track(trk, trkseg, timestamp)
 
         self.is_processed = True
+
+    def _existing_trk_timestamps(self):
+        """Gets a list of existing source track timestamps."""
+        gpkg_file = (
+            Path(CONFIG['folders']['auto_root']).expanduser()
+            / CONFIG['files']['canonical_gpkg']
+        )
+        con = sqlite3.connect(gpkg_file)
+        query = """
+            SELECT DISTINCT source_track_timestamp
+            FROM driving_tracks
+        """
+        df = pd.read_sql(query, con)
+        con.close()
+        return [parse(d) for d in df['source_track_timestamp'].to_list()]
 
     def _get_filter_speed_config(self):
         filter_speed_config = {
@@ -79,9 +107,15 @@ class GPXFile():
         filter_speed_config['profile'] = self.profile
         return filter_speed_config
     
+    def _print_track_already_in_log(self, trk):
+        print(
+            f"\"{trk.name}\" is already in the driving log. "
+            "Skipping this track."
+        )        
+    
     def _trk_get_time_range(self, trk):
         """Returns a tuple with the first and last time of a trk."""
-        min_time = trk_timestamp = min([
+        min_time = min([
             trkseg.points[0].time.astimezone(timezone.utc)
             for trkseg in trk.segments
         ])
@@ -90,7 +124,15 @@ class GPXFile():
             for trkseg in trk.segments
         ])
         return (min_time, max_time)
+    
+    def _trk_get_timestamp(self, trk):
+        """Gets the time of the earliest point of a track."""
+        return self._trk_get_time_range(trk)[0]
 
+    def _trk_in_log(self, trk):
+        """Returns true if track is in track log."""
+        return (self._trk_get_timestamp(trk) in self.existing_trk_timestamps)
+    
     def _trk_merge_trksegs(self, trksegs, index=0):
         """Recursively merges segments with small time gaps."""
         print("Merging segments...")
@@ -140,14 +182,6 @@ class GPXFile():
             new_track.creator = self.gpx.creator
             self.driving_tracks.append(new_track)
 
-    def _trkseg_get_timestamp(self, trk, trkseg):
-        """Gets the time of the first trkpt of a trkseg."""
-        try:
-            return trkseg.points[0].time.astimezone(timezone.utc)
-        except AttributeError:
-            return parse(trk.name).astimezone(timezone.utc)
-    
-
 
 class BadElfGPXFile(GPXFile):
     """A GPX file created by a Bad Elf GPS device."""
@@ -169,6 +203,14 @@ class BadElfGPXFile(GPXFile):
         for trk in self.gpx.tracks:
             print(f"Converting track \"{trk.name}\"...")
 
+            # Check if track is already in log.
+            if self._trk_in_log(trk):
+                self._print_track_already_in_log(trk)
+                continue
+
+            # Get timestamp before any trkseg processing.
+            timestamp = self._trk_get_timestamp(trk)
+
             # Remove outlier points.
             trk = trk_remove_outliers(
                 trk,
@@ -183,8 +225,6 @@ class BadElfGPXFile(GPXFile):
             )
 
             for ts_i, trkseg in enumerate(trk.segments):
-                # Get timestamp before any trkseg processing.
-                timestamp = self._trkseg_get_timestamp(trk, trkseg)
 
                 # Simplify trkseg.
                 trkseg = trkseg_simplify(
@@ -217,6 +257,14 @@ class GarminGPXFile(GPXFile):
         for trk in self.gpx.tracks:
             print(f"Converting track \"{trk.name}\"...")
 
+            # Check if track is already in log.
+            if self._trk_in_log(trk):
+                self._print_track_already_in_log(trk)
+                continue
+
+            # Get timestamp before any trkseg processing.
+            timestamp = self._trk_get_timestamp(trk)
+
             # Filter out ignored trks and trksegs.
             trk = self._trk_remove_ignored(trk)
 
@@ -224,9 +272,6 @@ class GarminGPXFile(GPXFile):
             trk.segments = self._trk_merge_trksegs(trk.segments)
 
             for ts_i, trkseg in enumerate(trk.segments):
-                # Get timestamp before any trkseg processing.
-                timestamp = self._trkseg_get_timestamp(trk, trkseg)
-
                 # Append processed trkseg to driving tracks list.
                 self._trkseg_append_driving_track(trk, trkseg, timestamp)
 
@@ -253,6 +298,14 @@ class MyTracksGPXFile(GPXFile):
         for trk in self.gpx.tracks:
             print(f"Converting track \"{trk.name}\"...")
 
+            # Check if track is already in log.
+            if self._trk_in_log(trk):
+                self._print_track_already_in_log(trk)
+                continue
+
+            # Get timestamp before any trkseg processing.
+            timestamp = self._trk_get_timestamp(trk)
+
             trk_time_range = self._trk_get_time_range(trk)
             if timelog_overlaps_range(timesegs, trk_time_range):
                 # Filter using timelog.
@@ -274,9 +327,6 @@ class MyTracksGPXFile(GPXFile):
                 )
 
             for ts_i, trkseg in enumerate(trk.segments):
-                # Get timestamp before any trkseg processing.
-                timestamp = self._trkseg_get_timestamp(trk, trkseg)
-
                 # Simplify trkseg.
                 trkseg = trkseg_simplify(
                     trkseg,
