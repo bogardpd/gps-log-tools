@@ -12,14 +12,11 @@ import tomli
 
 from dateutil.parser import parse
 from pathlib import Path
-from shapely import multilinestrings
 
 from GPXFile import GPXFile
 
 with open(Path(__file__).parent / "config.toml", 'rb') as f:
     CONFIG = tomli.load(f)
-
-NSMAP = {None: "http://www.opengis.net/kml/2.2"}
 
 
 class DrivingLog:
