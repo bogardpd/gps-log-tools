@@ -109,9 +109,6 @@ def row_to_placemark(row):
         else None
     )
 
-    # Build geometry.
-    linestrings = [kml_linestring(geom) for geom in row.geometry.geoms]
-
     # Build ExtendedData.
     ext_data_elements = [
         KML.Data(
@@ -133,7 +130,7 @@ def row_to_placemark(row):
         KML.styleUrl("#1"),
         KML.altitudeMode("clampToGround"),
         KML.tessellate(1),
-        KML.MultiGeometry(*linestrings),
+        kml_linestring(row.geometry)
     )
     return pm
 
