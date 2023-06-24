@@ -2,6 +2,8 @@
 
 import argparse
 import geopandas as gpd
+import pandas as pd
+import sqlite3
 import os
 import shutil
 import sys
@@ -67,28 +69,51 @@ class DrivingLog:
             f"Backed up canonical GPKG to {self.CANONICAL_BACKUP_FILE}."
         )
 
+    def existing_trk_timestamps(self):
+        """Gets a set of existing source track timestamps."""
+        gpkg_file = (
+            Path(CONFIG['folders']['auto_root']).expanduser()
+            / CONFIG['files']['canonical_gpkg']
+        )
+        con = sqlite3.connect(gpkg_file)
+        query = """
+            SELECT DISTINCT source_track_timestamp
+            FROM driving_tracks
+        """
+        df = pd.read_sql(query, con)
+        con.close()
+        return set(parse(d) for d in df['source_track_timestamp'].to_list())
+
     def import_gpx_files(self, gpx_files):
         """Imports GPX files into the GeoPackage driving log."""
         if len(gpx_files) == 0:
             print("No GPX file was provided.")
             return
-       
-        # Use dict to ensure unique timestamps, to avoid duplicate
-        # tracks among the input files.
-        gpx_tracks = {} 
+        
+        # Get a set of existing source track timestamps. These will be
+        # used to ensure tracks which are already imported will not be
+        # imported again.
+        existing_ts = self.existing_trk_timestamps()
+
+        new_gpx_tracks = [] 
         for f in gpx_files:
+            # Process GPX file and append processed tracks to list.
+            # Tracks with timestamps matching those in existing_ts will
+            # not be processed or appended to the list.
             gpx_file = GPXFile.load(f)
-            gpx_file.process()
+            gpx_file.process(existing_timestamps=existing_ts)
             file_tracks = gpx_file.driving_tracks
-            for ft in file_tracks:
-                # Use utc_start as track identifier, since processed
-                # tracks may have already been split from the same
-                # DrivingTrack timestamp.
-                gpx_tracks[ft.utc_start] = ft
-        driving_tracks_list = list(gpx_tracks.values())
+            new_gpx_tracks.extend(file_tracks)
+
+            # Get the timestamps from the new tracks, and include them
+            # in the set of existing track timestamps. This allows us to
+            # excluded these tracks if they show up in file in a future
+            # loop iteration.
+            added_ts = set(t.timestamp for t in file_tracks)
+            existing_ts.update(added_ts)
 
         # Add new tracks to GeoPackage.
-        self.append_tracks_to_gpkg(driving_tracks_list)
+        self.append_tracks_to_gpkg(new_gpx_tracks)
     
     def verify_logfile(self):
         """Checks for logfile and copies from template if needed."""

@@ -1,8 +1,6 @@
 """Classes for working with GPX files."""
 
 import gpxpy
-import pandas as pd
-import sqlite3
 import tomli
 
 from datetime import timedelta, timezone
@@ -39,7 +37,6 @@ class GPXFile():
         self.ignore = CONFIG['import']['ignore']
         self.is_processed = False
         self.driving_tracks = []
-        self.existing_trk_timestamps = self._existing_trk_timestamps()
         self.profile = '_default'
         self.import_config = CONFIG['import']['gpx'][self.profile]
     
@@ -60,7 +57,7 @@ class GPXFile():
         }
         return classes[profile](gpx_path, gpx)
 
-    def process(self):
+    def process(self, existing_timestamps=None):
         """Processes GPX file into a list of DrivingTracks."""
         print(f"Processing \"{self.gpx_path}\"...")
         if self.is_processed:
@@ -71,7 +68,7 @@ class GPXFile():
             print(f"Converting track \"{trk.name}\"...")
 
             # Check if track is already in log.
-            if self._trk_in_log(trk):
+            if self._trk_in_log(trk, existing_timestamps):
                 self._print_track_already_in_log(trk)
                 continue
 
@@ -83,21 +80,6 @@ class GPXFile():
                 self._trkseg_append_driving_track(trk, trkseg, timestamp)
 
         self.is_processed = True
-
-    def _existing_trk_timestamps(self):
-        """Gets a list of existing source track timestamps."""
-        gpkg_file = (
-            Path(CONFIG['folders']['auto_root']).expanduser()
-            / CONFIG['files']['canonical_gpkg']
-        )
-        con = sqlite3.connect(gpkg_file)
-        query = """
-            SELECT DISTINCT source_track_timestamp
-            FROM driving_tracks
-        """
-        df = pd.read_sql(query, con)
-        con.close()
-        return [parse(d) for d in df['source_track_timestamp'].to_list()]
 
     def _get_filter_speed_config(self):
         filter_speed_config = {
@@ -129,9 +111,11 @@ class GPXFile():
         """Gets the time of the earliest point of a track."""
         return self._trk_get_time_range(trk)[0]
 
-    def _trk_in_log(self, trk):
+    def _trk_in_log(self, trk, existing):
         """Returns true if track is in track log."""
-        return (self._trk_get_timestamp(trk) in self.existing_trk_timestamps)
+        if existing is None:
+            return False
+        return (self._trk_get_timestamp(trk) in existing)
     
     def _trk_merge_trksegs(self, trksegs, index=0):
         """Recursively merges segments with small time gaps."""
@@ -190,7 +174,7 @@ class BadElfGPXFile(GPXFile):
         self.profile = 'bad_elf'
         self.import_config = CONFIG['import']['gpx'][self.profile]
 
-    def process(self):
+    def process(self, existing_timestamps=None):
         """Processes GPX file into a list of DrivingTracks."""
         print(f"Processing \"{self.gpx_path}\" as Bad Elf GPX...")
         if self.is_processed:
@@ -204,7 +188,7 @@ class BadElfGPXFile(GPXFile):
             print(f"Converting track \"{trk.name}\"...")
 
             # Check if track is already in log.
-            if self._trk_in_log(trk):
+            if self._trk_in_log(trk, existing_timestamps):
                 self._print_track_already_in_log(trk)
                 continue
 
@@ -247,7 +231,7 @@ class GarminGPXFile(GPXFile):
         self.profile = 'garmin'
         self.import_config = CONFIG['import']['gpx'][self.profile]
 
-    def process(self):
+    def process(self, existing_timestamps=None):
         """Processes GPX file into a list of DrivingTracks."""
         print(f"Processing \"{self.gpx_path}\" as Garmin GPX...")
         if self.is_processed:
@@ -258,7 +242,7 @@ class GarminGPXFile(GPXFile):
             print(f"Converting track \"{trk.name}\"...")
 
             # Check if track is already in log.
-            if self._trk_in_log(trk):
+            if self._trk_in_log(trk, existing_timestamps):
                 self._print_track_already_in_log(trk)
                 continue
 
@@ -285,7 +269,7 @@ class MyTracksGPXFile(GPXFile):
         self.profile = 'mytracks'
         self.import_config = CONFIG['import']['gpx'][self.profile]
 
-    def process(self):
+    def process(self, existing_timestamps=None):
         """Processes GPX file into a list of DrivingTracks."""
         print(f"Processing \"{self.gpx_path}\" as myTracks GPX...")
         if self.is_processed:
@@ -299,7 +283,7 @@ class MyTracksGPXFile(GPXFile):
             print(f"Converting track \"{trk.name}\"...")
 
             # Check if track is already in log.
-            if self._trk_in_log(trk):
+            if self._trk_in_log(trk, existing_timestamps):
                 self._print_track_already_in_log(trk)
                 continue
 
@@ -342,12 +326,7 @@ class MyTracksGPXFile(GPXFile):
 
 
 if __name__ == "__main__":
-    sample_paths = [
-        # "~/OneDrive/Projects/Driving-Logs/Raw-Data/bad_elf/20221118T222956Z.gpx",
-        # "~/OneDrive/Projects/Driving-Logs/Raw-Data/garmin/20220404T0242Z_50LMT.gpx",
-        # "~/OneDrive/Projects/Driving-Logs/Raw-Data/mytracks/20221116T124435Z.gpx",
-        "~/OneDrive/Projects/Driving-Logs/Raw-Data/mytracks/20221117T140648Z.gpx",
-    ]
+    sample_paths = []
     for path in sample_paths:
         gpx_file = GPXFile.load(Path(path).expanduser())
         print(gpx_file)
