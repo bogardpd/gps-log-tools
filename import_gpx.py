@@ -29,7 +29,7 @@ class DrivingLog:
         script_root = Path(__file__).parent
         self.CANONICAL_GPKG_FILE = root / CONFIG['files']['canonical_gpkg']
         self.CANONICAL_BACKUP_FILE = (
-            root / CONFIG['files']['canonical_backup_gpkg']
+            root / CONFIG['files']['canonical_backup']
         )
         self.GPKG_TEMPLATE = (
             script_root / CONFIG['files']['script']['gpkg_template']
