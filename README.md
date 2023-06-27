@@ -19,7 +19,7 @@ The driving tracks are stored in a `driving_tracks` LineString layer, with the f
 | **role**          | String   | **driver** or **passenger** |
 | **vehicle_owner** | String   | **personal** (the log owner’s own vehicle), **private** (a privately owned vehicle, such as a friend’s car), or **rental** (a rental vehicle) |
 | **comments**      | String   | Optional comments |
-| **source_track_timestamp** | DateTime | UTC timestamp for the first point of the source GPX track before any processing, with milliseconds dropped. Used to identify a track to determine if it has already been imported. |
+| **source_track_timestamp** | DateTime | UTC timestamp for the first point of the source GPX track before any processing. Used to identify a track to determine if it has already been imported. |
 
 ## Import and Export Scripts
 
