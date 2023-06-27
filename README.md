@@ -8,7 +8,7 @@ The driving log is stored inside a [GeoPackage](https://www.geopackage.org/) fil
 
 ### GeoPackage Structure
 
-The driving tracks are stored in a `driving_tracks` MultiLineString layer, with the following fields:
+The driving tracks are stored in a `driving_tracks` LineString layer, with the following fields:
 
 | Name          | QGIS Type | Value |
 |---------------|:-----|:------|
