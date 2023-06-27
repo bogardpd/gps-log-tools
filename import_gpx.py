@@ -1,4 +1,4 @@
-"""Updates GeoPackage and imports GPX if provided."""
+"""Imports GPX files into a GeoPackage."""
 
 import argparse
 import geopandas as gpd
