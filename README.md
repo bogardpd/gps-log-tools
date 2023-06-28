@@ -1,6 +1,6 @@
 # GPS Log Tools
 
-This repository contains a collection of scripts used for maintaining my [GPS driving logs](https://paulbogard.net/driving-logs/).
+This repository contains a collection of scripts used for maintaining my [GPS driving log](https://paulbogard.net/driving-log/).
 
 ## Canonical Driving Log
 
