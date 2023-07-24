@@ -25,16 +25,16 @@ def export_kmz():
     gpkg_source = ROOT / CONFIG['files']['canonical_gpkg']
     kmz_output = ROOT / CONFIG['files']['output_kmz']
     # Read source file.
-    print(f"Reading {gpkg_source}…")
+    print(f"Reading {gpkg_source}...")
     gdf = gpd.read_file(gpkg_source, layer='driving_tracks')
     gdf = gdf.sort_values('utc_start')
 
     # Generate KML.
-    print("Generating KML…")
-    print("- Creating Placemarks…")
+    print("Generating KML...")
+    print("- Creating Placemarks...")
     gdf['placemark'] = gdf.apply(lambda r: row_to_placemark(r), axis=1)
 
-    print("- Creating document structure…")
+    print("- Creating document structure...")
     style = KML.Style(
         KML.LineStyle(
             KML.color("ff0000ff"),
