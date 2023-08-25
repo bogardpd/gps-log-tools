@@ -1,7 +1,7 @@
 # FILES AND FOLDERS
 
 [folders]
-auto_root   = "~/OneDrive/Projects/Driving-Logs"
+auto_root   = "~/OneDrive/Projects/Driving-Log"
 import_root = "~/OneDrive/Import/"
 
 [folders.raw]
