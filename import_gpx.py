@@ -66,6 +66,28 @@ class DrivingLog:
             f"Backed up canonical GPKG to {self.CANONICAL_BACKUP_FILE}."
         )
 
+    def check_logfile_integrity(self):
+        """Checks if number of records matches length."""
+        print("Checking logfile integrity.")
+
+        # Get GeoPackage.
+        # Note: may be able to look at gpkg_ogr_contents feature_count
+        # instead, which may be faster than loading entire GeoPackage.
+        gdf = gpd.read_file(self.CANONICAL_GPKG_FILE)
+
+        # Get count of records.
+        con = sqlite3.connect(self.CANONICAL_GPKG_FILE)
+        cur = con.cursor()
+        res = cur.execute("SELECT COUNT(fid) FROM driving_tracks")
+        record_count = res.fetchone()[0]
+        con.close()
+
+        # Check integrity.
+        if len(gdf) != record_count:
+            print("GeoPackage length:", len(gdf))
+            print("Record count:", record_count)
+            raise RuntimeError("GeoPackage length is incorrect.")
+
     def existing_trk_timestamps(self):
         """Gets a set of existing source track timestamps."""
         gpkg_file = (
@@ -83,6 +105,7 @@ class DrivingLog:
 
     def import_gpx_files(self, gpx_files):
         """Imports GPX files into the GeoPackage driving log."""
+
         if len(gpx_files) == 0:
             print("No GPX file was provided.")
             return
@@ -116,6 +139,7 @@ class DrivingLog:
         """Checks for logfile and copies from template if needed."""
         if os.path.exists(self.CANONICAL_GPKG_FILE):
             print(f"Logfile is present at {self.CANONICAL_GPKG_FILE}.")
+            self.check_logfile_integrity()
         else:
             shutil.copy(self.GPKG_TEMPLATE, self.CANONICAL_GPKG_FILE)
             print(f"Copied logfile {self.CANONICAL_GPKG_FILE} from template.")
