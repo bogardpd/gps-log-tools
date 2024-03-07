@@ -43,6 +43,11 @@ bad_elf  = 1.0      # m/s
 garmin   = 1.0      # m/s
 mytracks = 0.277778 # km/h
 
+# DRIVING RANGE
+
+[driving_range]
+recharge_time_hours = 10 # Default time for recharging a car for driving range calculations
+
 
 # IMPORT CONFIGURATION
 
