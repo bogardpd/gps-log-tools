@@ -1,6 +1,9 @@
 import geopandas as gpd
 import pandas as pd
+import numpy as np
+import pandas as pd
 import tomli
+from datetime import timedelta
 from pathlib import Path
 from pyproj import Geod
 
@@ -27,8 +30,17 @@ def chart_driving_range(charge_time_hours):
         lambda x: geod.geometry_length(x.geometry),
         axis=1
     )
+    
+    # Create per-charge groupings.
+    df = pd.DataFrame(gdf[['utc_start', 'utc_stop', 'length_m']])
+    df['break_prior'] = df['utc_start'] - df.shift(1)['utc_stop']
+    df['charge_group'] = np.where(
+        df['break_prior'] >= timedelta(hours=charge_time_hours), 1, 0
+    ).cumsum()
+    grouped = df.groupby('charge_group').sum(numeric_only=True)
+    print(grouped)
+    
 
-    print(gdf)
 
 if __name__ == "__main__":
     chart_driving_range(CONFIG['driving_range']['recharge_time_hours'])
