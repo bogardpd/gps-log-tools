@@ -37,7 +37,11 @@ def chart_driving_range(charge_time_hours):
     df['charge_group'] = np.where(
         df['break_prior'] >= timedelta(hours=charge_time_hours), 1, 0
     ).cumsum()
-    grouped = df.groupby('charge_group').sum(numeric_only=True)
+    grouped = df.groupby('charge_group').agg({
+        'utc_start': "min",
+        'utc_stop': "max",
+        'length_m': "sum",
+    }, numeric_only=True)
     print(grouped)
     
 
