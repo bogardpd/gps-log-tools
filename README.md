@@ -117,3 +117,9 @@ For GPX files which have a speed associated with each trackpoint, this script lo
 <img src="img/trim.animated.png" width="800">
 
 Note that when using this script during an import, it’s important to record the first trackpoint’s timestamp before running this script, as the first trackpoint could be removed.
+
+## Data Analysis Scripts
+
+### chart_driving_range.py
+
+Takes driving log data, groups it by blocks of driving that have a minimum specified break duration, and plots the lengths of each group on a histogram. Intended for analyzing driving ranges between the typical charge times of an electric vehicle, to see how many drives would require intermediate charging.
