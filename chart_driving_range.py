@@ -45,6 +45,8 @@ def group_drives(gdf, charge_time_hours):
     # Create per-charge groupings.
     print("Grouping...")
     df = pd.DataFrame(gdf[['utc_start', 'utc_stop', 'length_m']])
+    df['utc_start'] = pd.to_datetime(df['utc_start'], format='ISO8601')
+    df['utc_stop'] = pd.to_datetime(df['utc_stop'], format='ISO8601')
     df['break_prior'] = df['utc_start'] - df.shift(1)['utc_stop']
     df['charge_group'] = np.where(
         df['break_prior'] >= timedelta(hours=charge_time_hours), 1, 0
