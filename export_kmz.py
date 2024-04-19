@@ -27,6 +27,7 @@ def export_kmz():
     # Read source file.
     print(f"Reading {gpkg_source}...")
     gdf = gpd.read_file(gpkg_source, layer='driving_tracks')
+    gdf['utc_start'] = pd.to_datetime(gdf['utc_start'], format='ISO8601')
     gdf = gdf.sort_values('utc_start')
 
     # Generate KML.
