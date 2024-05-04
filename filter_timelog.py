@@ -124,8 +124,8 @@ def get_timelog_segments():
 
     # Group by segment.
     grouped = df.groupby('segment').agg(
-        start_utc=('time_utc', min),
-        stop_utc=('time_utc', max),
+        start_utc=('time_utc', 'min'),
+        stop_utc=('time_utc', 'max'),
     )
 
     # If first entry was a stop (start_utc == stop_utc), then set start
