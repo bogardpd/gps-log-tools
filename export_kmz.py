@@ -18,6 +18,7 @@ EXT_DATA_ATTRIBUTES = {
     'creator':       "Creator",
     'role':          "Role",
     'vehicle_owner': "Vehicle Owner",
+    'comments':      "Comments",
 }
 
 def export_kmz():
@@ -105,10 +106,6 @@ def kml_linestring(geom):
 def row_to_placemark(row):
     """Converts a GeoPandas row to a KML Placemark."""
     pm_name = row.utc_start.strftime(CONFIG['timestamps']['kml_name'])
-    pm_desc = (
-        KML.description(row.comments) if pd.notnull(row.comments)
-        else None
-    )
 
     # Build ExtendedData.
     ext_data_elements = [
@@ -123,7 +120,6 @@ def row_to_placemark(row):
 
     pm = KML.Placemark(
         KML.name(pm_name),
-        pm_desc,
         KML.ExtendedData(*ext_data_elements),
         KML.TimeStamp(
             KML.when(row.utc_start.isoformat())
