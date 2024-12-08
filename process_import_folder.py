@@ -68,7 +68,7 @@ def main():
     )
     destinations = {
         profile: AUTO_ROOT / CONFIG['folders']['raw'][profile]
-        for profile in PROFILES.keys()
+        for profile in CONFIG['folders']['raw'].keys()
     }
     for file in gpx_files:
         gpx_file_obj = GPXFile.load(file)
