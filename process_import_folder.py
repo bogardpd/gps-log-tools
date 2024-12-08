@@ -75,7 +75,7 @@ def main():
         destination = destinations[gpx_file_obj.profile]
         if gpx_file_obj.profile == "bad_elf":
             rename_bad_elf_gpx(file, dest_folder_path=destination)
-        elif gpx_file_obj.profile == "mytracks":
+        else:
             first_point_time = min([
                 segment.points[0].time.astimezone(timezone.utc)
                 for track in gpx_file_obj.gpx.tracks
