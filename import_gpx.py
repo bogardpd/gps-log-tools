@@ -73,7 +73,7 @@ class DrivingLog:
         # Get GeoPackage.
         # Note: may be able to look at gpkg_ogr_contents feature_count
         # instead, which may be faster than loading entire GeoPackage.
-        gdf = gpd.read_file(self.CANONICAL_GPKG_FILE)
+        gdf = gpd.read_file(self.CANONICAL_GPKG_FILE, layer='driving_tracks')
 
         # Get count of records.
         con = sqlite3.connect(self.CANONICAL_GPKG_FILE)
