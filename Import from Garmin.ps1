@@ -39,7 +39,7 @@ foreach($Device in $Devices.GetEnumerator()) {
   
   if ($SourceGPX) {
     # Copy GPX to raw data folder.
-    $TargetFolderPath = "C:\Users\paulb\OneDrive\Projects\Driving-Log\Raw-Data\garmin"
+    $TargetFolderPath = "C:\Users\paulb\OneDrive\Projects\Driving_Log\Raw_Data\garmin"
     Write-Host "Copying GPX to `"$($TargetFolderPath)`"..."
     $TargetFolderShell = $Shell.NameSpace($TargetFolderPath).self
     $TargetFolderShell.GetFolder.CopyHere($SourceGPX)

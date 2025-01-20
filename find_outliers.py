@@ -63,6 +63,6 @@ def distance_m(row):
     ).meters
 
 if __name__ == "__main__":
-    be_path = Path.home() / "OneDrive/Projects/Driving-Log/Raw-Data/bad_elf/"
+    be_path = Path.home() / "OneDrive/Projects/Driving_Log/Raw_Data/bad_elf/"
     for f in sorted(list(be_path.glob("*.gpx"))):
         find_outliers(f)

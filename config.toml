@@ -1,25 +1,25 @@
 # FILES AND FOLDERS
 
 [folders]
-auto_root   = "~/OneDrive/Projects/Driving-Log"
+auto_root   = "~/OneDrive/Projects/Driving_Log"
 import_root = "~/OneDrive/Import/"
 
 [folders.raw]
-_default    = "Raw-Data/_default"
-bad_elf     = "Raw-Data/bad_elf"
-garmin      = "Raw-Data/garmin"
-mytracks    = "Raw-Data/mytracks"
+_default    = "Raw_Data/_default"
+bad_elf     = "Raw_Data/bad_elf"
+garmin      = "Raw_Data/garmin"
+mytracks    = "Raw_Data/mytracks"
 
 # Files relative to the auto_root folder.
 [files]
-canonical_gpkg       = "Driving-Log.gpkg"
-canonical_backup     = "./.Backup/Driving-Log.backup.gpkg"
+canonical_gpkg       = "Driving_Log.gpkg"
+canonical_backup     = "./.Backup/Driving_Log.backup.gpkg"
 output_kmz           = "Driving.kmz"
 bad_elf_outliers_log = "Documentation/Bad-Elf-Outliers.csv"
 
 # Files relative to the script folder.
 [files.script]
-gpkg_template = "./templates/Driving-Log.template.gpkg"
+gpkg_template = "./templates/Driving_Log.template.gpkg"
 
 # Files in an absolute location.
 [files.absolute]
