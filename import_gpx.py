@@ -52,6 +52,8 @@ class DrivingLog:
             gdf.to_file(
                 self.CANONICAL_GPKG_FILE,
                 driver="GPKG",
+                # Use fiona to avoid pyogrio column order bug.
+                engine="fiona",
                 layer="driving_tracks",
                 mode='a',
             )

@@ -42,12 +42,15 @@ class DrivingTrack:
     def get_record(self):
         """Returns a record hash for the driving_tracks table."""
         return {
+            # If pyogiro is used as the engine in GeoDataFrame.to_file,
+            # the fields must be in the same order as the columns in the
+            # SQLite database table.
             'geometry': self.geometry,
             'utc_start': self.utc_start,
             'utc_stop': self.utc_stop,
+            'source_track_timestamp': self.timestamp,
             'creator': self.creator,
             'role': self.role,
             'vehicle_owner': self.vehicle_owner,
             'comments': self.description,
-            'source_track_timestamp': self.timestamp,
         }
