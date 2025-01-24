@@ -16,8 +16,8 @@ The driving tracks are stored in a `driving_tracks` LineString layer, with the f
 | **utc_start**     | DateTime | UTC timestamp for the beginning of the track |
 | **utc_stop**      | DateTime | UTC timestamp for the end of the track |
 | **creator**       | String   | Device or software used to create the track (e.g. **Bad Elf GPS Pro+** or **myTracks**) |
-| **role**          | String   | **driver** or **passenger** |
-| **vehicle_owner** | String   | **personal** (the log owner’s own vehicle), **private** (a privately owned vehicle, such as a friend’s car), **rental** (a rental vehicle), **taxi**, or **bus** |
+| **role**          | String   | **Driver** or **Passenger** |
+| **vehicle_owner** | String   | **Personal** (the log owner’s own vehicle), **Private** (a privately owned vehicle, such as a friend’s car), **Rental** (a rental vehicle), **Taxi**, or **Bus** |
 | **comments**      | String   | Optional comments |
 | **source_track_timestamp** | DateTime | UTC timestamp for the first point of the source GPX track before any processing. Used to identify a track to determine if it has already been imported. |
 

@@ -30,7 +30,7 @@ def chart_driving_range(charge_time_hours):
 def group_drives(gdf, charge_time_hours):
     """Calculates lengths of driving between lengthy breaks."""
     # Filter and sort.
-    gdf = gdf[gdf['vehicle_owner'] == "personal"]
+    gdf = gdf[gdf['vehicle_owner'] == "Personal"]
     gdf = gdf[pd.notnull(gdf['utc_stop'])]
     gdf = gdf.sort_values('utc_start')
     
