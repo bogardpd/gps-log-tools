@@ -6,20 +6,69 @@ This repository contains a collection of scripts used for maintaining my [GPS dr
 
 The driving log is stored inside a [GeoPackage](https://www.geopackage.org/) file, with a location defined by the `files/canonical_gpkg` key in `config.toml`. All imports and changes are made to this file, and all exports are derived from this file.
 
-### GeoPackage Structure
+### GeoPackage Layers
 
-The driving tracks are stored in a `driving_tracks` LineString layer, with the following fields:
+#### driving_tracks (LineString)
 
-| Name          | QGIS Type | Value |
+The `driving_tracks` layer stores driving tracks.
+
+| Field Name    | Type | Value |
+|---------------|:-----|:------|
+| **fid**           | Integer64 | Feature ID |
+| **utc_start**     | DateTime  | UTC timestamp for the beginning of the track |
+| **utc_stop**      | DateTime  | UTC timestamp for the end of the track |
+| **source_track_timestamp** | DateTime | UTC timestamp for the first point of the source GPX track before any processing. Used to identify a track to determine if it has already been imported. |
+| **creator**       | String    | Device or software used to create the track (e.g. **Bad Elf GPS Pro+** or **myTracks**) |
+| **role**          | String    | **Driver** or **Passenger** |
+| **vehicle_owner** | String    | **Personal** (the log owner’s own vehicle), **Private** (a privately owned vehicle, such as a friend’s car), **Rental** (a rental vehicle), **Taxi**, or **Bus** |
+| **comments**      | String    | Comments |
+| **rental_fid**    | Integer64 | Feature ID of the `rental` this driving track belongs to, or NULL if it does not belong to a rental
+
+#### rentals (No Geometry)
+
+The `rentals` layer stores individual rental cars. If multiple cars were rented under the same reservation, each car should have its own entry.
+
+| Field Name    | Type | Value |
 |---------------|:-----|:------|
 | **fid**           | Integer64  | Feature ID |
-| **utc_start**     | DateTime | UTC timestamp for the beginning of the track |
-| **utc_stop**      | DateTime | UTC timestamp for the end of the track |
-| **creator**       | String   | Device or software used to create the track (e.g. **Bad Elf GPS Pro+** or **myTracks**) |
-| **role**          | String   | **Driver** or **Passenger** |
-| **vehicle_owner** | String   | **Personal** (the log owner’s own vehicle), **Private** (a privately owned vehicle, such as a friend’s car), **Rental** (a rental vehicle), **Taxi**, or **Bus** |
-| **comments**      | String   | Optional comments |
-| **source_track_timestamp** | DateTime | UTC timestamp for the first point of the source GPX track before any processing. Used to identify a track to determine if it has already been imported. |
+| **agency**        | String     | The rental car agency brand the car was rented from |
+| **pickup_date_local** | Date   | The date the rental car was picked up, in the local time zone of the pickup location |
+| **pickup_time_utc** | DateTime | The date and time the rental car was picked up, in UTC |
+| **pickup_rental_location_fid** | Integer64 | Feature ID of the `rental_location` where the rental car was picked up |
+| **return_date_local** | Date   | The date the rental car was returned, in the local time zone of the return location |
+| **return_time_utc** | DateTime | The date and time the rental car was returned, in UTC |
+| **return_rental_location_fid** | Integer64 | Feature ID of the `rental_location` where the rental car was returned |
+| **model_year**    | String     | Model year of the rental car |
+| **make**          | String     | Make of the rental car |
+| **model**         | String     | Model of the rental car |
+| **power**         | String     | Propulsion of the rental car, such as **ICE** (Internal Combustion Engine), **BEV** (Battery Electric Vehicle), or **PHEV** (Plug-in Hybrid Electric Vehicle) |
+| **fuel**          | String     | Fuel type of the rental car, such as **Unleaded** or **Diesel**. BEVs should leave this field null. |
+| **transmission**  | String     | **Automatic** or **Manual** |
+| **color**         | String     | Color of the rental car |
+| **miles_out**      | Integer64  | Odometer mileage of the rental car at pickup. (Rental cars with odometers in kilometers should convert the value to miles.) |
+| **miles_driven**   | Integer64  | Distance driven with the rental car, in miles |
+| **purpose**       | String     | **Business** or **Personal** |
+| **license_plate** | String     | The country (ISO 3166-1 alpha-2 code), region (ISO 3166-2) if appropriate, and number (all non-significant spaces and dashes removed) of the car’s license plate, separated by `/` characters. For example, a United States (US) California (CA) license plate would be stored as `US/CA/2GAT123`.
+| **comments**      | String    | Comments |
+
+Although the template uses **miles_out** and **miles_driven** columns, these columns could be changed to **km_out** and **km_driven** if necessary—just ensure that all values in both columns are using the same unit.
+
+#### rental_locations (Point)
+
+The `rental_locations` layer stores rental car agency locations. If a rental car location moves and keeps the same name but changes address (for example, an airport rental car location moving from offsite to a Consolidated Rental Car Facility), it should have a separate location for each address, and the **discriminator** field should be used to distinguish between them.
+
+| Field Name    | Type | Value |
+|---------------|:-----|:------|
+| **fid**           | Integer64  | Feature ID |
+| **agency**        | String     | The brand of the rental car agency |
+| **location_name** | String     | The location name of this location (e.g. `LAX Airport`)
+| **address**       | String     | The address of the location, including country |
+| **time_zone**     | String     | The IANA Time Zone Database zone name for the rental location (e.g. `America/Los_Angeles`) |
+| **comments**      | String     | Comments |
+| **discriminator** | String     | Used to distinguish between two locations with the same **agency** and **location_name** combination but different addresses. For example, if a location moved from offsite to a Consolidated Rental Car facility, the old location could use `Pre-CRCF` and the new location could use `CRCF`. If a discriminator is not needed, leave this field null. |
+
+The **agency**, **location_name**, and **discriminator** are intended to be concatenated together for map labels, to give each `rental_location` a unique label.
+
 
 ## Import and Export Scripts
 
