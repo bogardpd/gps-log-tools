@@ -111,6 +111,10 @@ Since I’m maintaining several decades of driving data, I want my KML files to 
 - Google Earth by default maintains the a separate style for each [Placemark](https://developers.google.com/kml/documentation/kmlreference#placemark), even if the styles are identical. Since all of my Placemarks are tracks with the same line width and color, this script generates KML/KMZ files with the style defined once, and every Placemark using it.
 - All latitudes and longitudes are rounded to 6 decimal places.
 
+### update_rental_times.py
+
+Handles local to UTC conversions for **pickup_time_utc** and **return_time_utc** on the driving log’s `rentals` table. Before using this, the rental must have been entered with at least a **pickup_date_local**, **pickup_rental_location_fid**, **return_date_local**, and **return_rental_location_fid**, and each `rental_location` must have a set **time_zone**.
+
 ## Utility Scripts
 
 ### filter_speed.py
