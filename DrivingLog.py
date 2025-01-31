@@ -20,7 +20,7 @@ class DrivingLog:
         self.ISO_FORMAT_LIKE = "____-__-__T__:__:__Z"
         sqlite3.register_adapter(
             datetime,
-            lambda dt: dt.strftime(self.ISO_FORMAT).encode('utf-8'),
+            lambda dt: dt.strftime(self.ISO_FORMAT),
         )
 
     def normalize_times(self):
@@ -60,3 +60,6 @@ class DrivingLog:
             conn.commit()
             print(f"Updated {cur.rowcount} rentals.")
         
+if __name__ == '__main__':
+    dl = DrivingLog()
+    dl.normalize_times()

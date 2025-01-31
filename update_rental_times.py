@@ -12,7 +12,7 @@ DRIVING_LOG_PATH = AUTO_ROOT / CONFIG['files']['canonical_gpkg']
 ISO_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 sqlite3.register_adapter(
     datetime,
-    lambda dt: dt.strftime(ISO_FORMAT).encode('utf-8'),
+    lambda dt: dt.strftime(ISO_FORMAT),
 )
 
 def update_rental_times():
