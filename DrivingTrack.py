@@ -53,4 +53,5 @@ class DrivingTrack:
             'role': self.role,
             'vehicle_owner': self.vehicle_owner,
             'comments': self.description,
+            'rental_fid': None,
         }
