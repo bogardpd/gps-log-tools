@@ -6,6 +6,9 @@ This repository contains a collection of scripts used for maintaining my [GPS dr
 
 The driving log is stored inside a [GeoPackage](https://www.geopackage.org/) file, with a location defined by the `files/canonical_gpkg` key in `config.toml`. All imports and changes are made to this file, and all exports are derived from this file.
 
+> [!TIP]
+> A blank GeoPackage file in this format is available in the [`/templates`](/templates) folder.
+
 ### GeoPackage Layers
 
 #### driving_tracks (LineString)
