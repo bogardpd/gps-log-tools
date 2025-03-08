@@ -11,7 +11,7 @@ The driving log is stored inside a [GeoPackage](https://www.geopackage.org/) fil
 
 ### GeoPackage Layers
 
-#### driving_tracks (LineString)
+#### driving_tracks (MultiLineString)
 
 The `driving_tracks` layer stores driving tracks.
 
