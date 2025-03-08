@@ -94,14 +94,20 @@ def gdf_time_range(gdf):
     ) + timedelta(days=1)
     return (min_time, max_time)
 
-def kml_linestring(geom):
+def kml_linestring(ls):
     """Converts a shapely linestring to a KML LineString."""
     coord_str = " ".join(
         [",".join(
             str(f) for f in coord
-        ) for coord in geom.coords]
+        ) for coord in ls.coords]
     )
     return KML.LineString(KML.coordinates(coord_str))
+
+def kml_multilinestring(geom):
+    """Converts a shapely multilinestring to a KML LineString."""
+    return KML.MultiGeometry(
+        *[kml_linestring(l) for l in geom.geoms]
+    )
 
 def row_to_placemark(row):
     """Converts a GeoPandas row to a KML Placemark."""
@@ -127,7 +133,7 @@ def row_to_placemark(row):
         KML.styleUrl("#1"),
         KML.altitudeMode("clampToGround"),
         KML.tessellate(1),
-        kml_linestring(row.geometry)
+        kml_multilinestring(row.geometry)
     )
     return pm
 

@@ -2,8 +2,7 @@
 
 from datetime import timezone
 from pathlib import Path
-from pykml.factory import KML_ElementMaker as KML
-from shapely import linestrings
+from shapely import linestrings, multilinestrings
 import tomli
 
 with open(Path(__file__).parent / "config.toml", 'rb') as f:
@@ -29,7 +28,7 @@ class DrivingTrack:
         """Loads data from a GPX trkseg."""
         self.coords = [(p.longitude, p.latitude) for p in trkseg.points]
         if len(self.coords) >= 2:
-            self.geometry = linestrings(self.coords)
+            self.geometry = multilinestrings([self.coords])
         else:
             self.geometry = None
         self.utc_start = (
