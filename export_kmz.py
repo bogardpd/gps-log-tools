@@ -95,7 +95,7 @@ def gdf_time_range(gdf):
     return (min_time, max_time)
 
 def kml_linestring(ls):
-    """Converts a shapely linestring to a KML LineString."""
+    """Converts a Shapely LineString to a KML LineString."""
     coord_str = " ".join(
         [",".join(
             str(f) for f in coord
@@ -104,7 +104,7 @@ def kml_linestring(ls):
     return KML.LineString(KML.coordinates(coord_str))
 
 def kml_multilinestring(geom):
-    """Converts a shapely multilinestring to a KML LineString."""
+    """Converts a Shapely MultiLineString to a KML MultiGeometry."""
     return KML.MultiGeometry(
         *[kml_linestring(l) for l in geom.geoms]
     )
