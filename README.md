@@ -48,10 +48,11 @@ The `rentals` layer stores individual rental cars. If multiple cars were rented 
 | **fuel**          | String     | Fuel type of the rental car, such as **Unleaded** or **Diesel**. BEVs should leave this field null. |
 | **transmission**  | String     | **Automatic** or **Manual** |
 | **color**         | String     | Color of the rental car |
-| **miles_out**      | Integer64  | Odometer mileage of the rental car at pickup. (Rental cars with odometers in kilometers should convert the value to miles.) |
-| **miles_driven**   | Integer64  | Distance driven with the rental car, in miles |
+| **miles_out**     | Integer64  | Odometer mileage of the rental car at pickup. (Rental cars with odometers in kilometers should convert the value to miles.) |
+| **miles_driven**  | Integer64  | Distance driven with the rental car, in miles |
 | **purpose**       | String     | **Business** or **Personal** |
 | **license_plate** | String     | The country (ISO 3166-1 alpha-2 code), region (ISO 3166-2) if appropriate, and number (all non-significant spaces and dashes removed) of the car’s license plate, separated by `/` characters. For example, a United States (US) California (CA) license plate would be stored as `US/CA/2GAT123`.
+| **vin**           | String    | Vehicle Identification Number of the rental car |
 | **comments**      | String    | Comments |
 
 Although the template uses **miles_out** and **miles_driven** columns, these columns could be changed to **km_out** and **km_driven** if necessary—just ensure that all values in both columns are using the same unit.
