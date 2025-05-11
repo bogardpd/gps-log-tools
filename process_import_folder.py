@@ -3,6 +3,7 @@ import colorama
 import sys
 import traceback
 import tomli
+import argparse
 from datetime import timezone
 from pathlib import Path
 from zipfile import ZipFile
@@ -101,10 +102,21 @@ def main():
     )
 
 if __name__ == "__main__":
+    # Set up argparse to allow for command line arguments.
+    parser = argparse.ArgumentParser(
+        description="Imports GPX files from an input folder."
+    )
+    parser.add_argument(
+        "--skipconfirm",
+        action="store_true",
+        help="Skip confirmation prompt after running the script."
+    )
+    args = parser.parse_args()
     try:
         main()
     except BaseException:
         print(sys.exc_info()[0])
         print(traceback.format_exc())
     finally:
-        input("Press Enter to continue... ")
+        if not args.skipconfirm:
+            input("Press Enter to continue... ")
