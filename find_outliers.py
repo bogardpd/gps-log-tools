@@ -35,7 +35,7 @@ def find_outliers(gpx_file):
             # Speed from previous/to next point in meters per second:
             points['speed_prev'] = points['dist_prev'] / points['time_prev']
             points['speed_next'] = points['speed_prev'].shift(-1)
-            
+
             # Find outliers by looking for points where speed from prior
             # point or speed to next point are above the speed
             # threshold.
@@ -43,7 +43,7 @@ def find_outliers(gpx_file):
                 (points['speed_prev'] > SPEED_THRESHOLD)
                 | (points['speed_next'] > SPEED_THRESHOLD)
             ]
-            
+
             ## Find time travel outliers
             time_travel_outliers = points[points['time_prev'] < 0]
 
@@ -63,6 +63,6 @@ def distance_m(row):
     ).meters
 
 if __name__ == "__main__":
-    be_path = Path.home() / "OneDrive/Projects/Driving_Log/Raw_Data/bad_elf/"
+    be_path = Path.home() / "Dropbox/Projects/Driving_Log/Raw_Data/bad_elf/"
     for f in sorted(list(be_path.glob("*.gpx"))):
         find_outliers(f)

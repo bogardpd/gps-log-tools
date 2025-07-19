@@ -1,8 +1,8 @@
 # FILES AND FOLDERS
 
 [folders]
-auto_root   = "~/OneDrive/Projects/Driving_Log"
-import_root = "~/OneDrive/Import/"
+auto_root   = "~/Dropbox/Projects/Driving_Log"
+import_root = "~/Dropbox/Import/"
 
 [folders.raw]
 _default    = "Raw_Data/_default"
@@ -53,7 +53,7 @@ recharge_time_hours = 10 # Default time for recharging a car for driving range c
 
 [import]
 min_points = 2 # Only keep linestrings with at least this many points
-  
+
 [import.gpx]
 
 # Configure which scripts are run on GPX files from different devices (_default
@@ -71,7 +71,7 @@ min_points = 2 # Only keep linestrings with at least this many points
 #     outliers.
 #   filter_speed.method: (str "center"|"extended"): "center" centers the #    #     rolling window. "extended" uses both a left- and right-aligned window, and
 #     only rejects points if they fall below the minimum speed in both
-#     windows.   
+#     windows.
 #
 # merge_segments
 #   Joins consecutive track segments within a track.
@@ -105,7 +105,7 @@ simplify.epsilon = 2e-6
 
 [import.gpx.garmin] # Garmin DriveSmart devices (GarminGPXFile class)
 merge_segments.max_seconds = 600
-    
+
 [import.gpx.mytracks] # myTracks iOS app (MyTracksGPXFile class)
 filter_speed.min_speed_m_s = 1.78816 # 4 MPH
 filter_speed.rolling_window = 25
@@ -116,7 +116,7 @@ simplify.epsilon = 2e-6
 # Tracks and track segments to ignore when importing Garmin trip logs. Tracks
 # and track segments are identified by a UTC timestamp of their first waypoint.
 [import.ignore]
-trk = [ 
+trk = [
   # Garmin GPX Tracks to ignore.
   2015-10-11T15:37:00+00:00,
   2016-05-06T15:40:01+00:00,
@@ -149,6 +149,6 @@ trk = [
 ]
 trkseg = [
   # Individual track segments to ignore when importing Garmin trip logs. (All
-  # track segments in a track ignored above will also be ignored.)      
+  # track segments in a track ignored above will also be ignored.)
   2021-10-03T18:31:26-04:00,
 ]

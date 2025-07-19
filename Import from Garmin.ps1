@@ -32,29 +32,29 @@ $Devices = @{
 }
 
 foreach($Device in $Devices.GetEnumerator()) {
-  
+
   $SourceGPXPath = $Device.Name + "\Internal Storage\GPX\Current.gpx"
   Write-Host "Reading GPX file from `"$($SourceGPXPath)`"..." -ForegroundColor Yellow
   $SourceGPX = Get-MTP-Object $Shell $SourceGPXPath
-  
+
   if ($SourceGPX) {
     # Copy GPX to raw data folder.
-    $TargetFolderPath = "C:\Users\paulb\OneDrive\Projects\Driving_Log\Raw_Data\garmin"
+    $TargetFolderPath = "C:\Users\paulb\Dropbox\Projects\Driving_Log\Raw_Data\garmin"
     Write-Host "Copying GPX to `"$($TargetFolderPath)`"..."
     $TargetFolderShell = $Shell.NameSpace($TargetFolderPath).self
     $TargetFolderShell.GetFolder.CopyHere($SourceGPX)
-    
+
     # Rename raw data file.
     $RawFileName = "$($UTCTime)_$($Device.Value).gpx"
     Write-Host "Renaming GPX to `"$($RawFileName)`"..."
     Rename-Item -Path "$($TargetFolderPath)\Current.gpx" -NewName $RawFileName
     Write-Host "...done."
-  
+
     # Import GPX with Python script.
     python "$($ScriptPath)\import_gpx.py" "$($TargetFolderPath)\$($RawFileName)" --nopause
 
   } else {
-    
+
     Write-Host "No GPX file found at `"$($SourceGPXPath)`"."
 
   }
