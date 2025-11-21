@@ -28,7 +28,7 @@ def main():
         colorama.Style.RESET_ALL
     )
     # Unzip and delete zip files.
-    
+
     print(
         colorama.Style.BRIGHT +
         "Extracting and deleting zip files..." +
@@ -44,11 +44,11 @@ def main():
 
     # Select GPX files.
     gpx_files = list(IMPORT_ROOT.glob("*.gpx"))
-    
+
     # Import GPX files.
     print(
         colorama.Style.BRIGHT +
-        "Updating KML with imported files..." +
+        "Updating driving log with imported files..." +
         colorama.Style.RESET_ALL
     )
     import_gpx(gpx_files)
