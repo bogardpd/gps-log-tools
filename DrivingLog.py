@@ -56,13 +56,53 @@ class DrivingLog:
                 geometry="geometry",
                 crs="EPSG:4326"
             )
+            # Normalize against existing schema.
+            # When appending, columns being in a different order from
+            # the existing geopackage layer can lead to data being in
+            # the wrong place. Normalizing ensures the schema of
+            # appended data matches.
+            existing = gpd.read_file(
+                self.CANONICAL_GPKG_FILE,
+                layer="driving_tracks",
+                rows=0,
+            )
+            existing_cols = list(existing.columns)
+            incoming_cols = list(gdf.columns)
+            print("Existing columns:", existing_cols)
+            print("Incoming columns:", incoming_cols)
+
+            # Check that geometry column name matches.
+            geom_col = gdf.geometry.name
+            if geom_col not in existing_cols:
+                raise ValueError(
+                    f"Geometry column '{geom_col}' not found in existing "
+                    "layer schema"
+                )
+
+            # Check for columns in new data not in current schema.
+            extra_cols = set(incoming_cols) - set(existing_cols)
+            if extra_cols:
+                raise ValueError(
+                    "Incoming data has columns not present in layer "
+                    f"schema: {extra_cols}"
+                )
+
+            # Add missing columns from existing schema as null values.
+            for col in existing_cols:
+                if col not in gdf.columns:
+                    gdf[col] = None
+
+            # Reorder columns to match existing schema.
+            gdf = gdf[existing_cols]
+
+
+            # Append data to geopackage layer.
             gdf.to_file(
                 self.CANONICAL_GPKG_FILE,
                 driver="GPKG",
-                # Use fiona to avoid pyogrio column order bug.
-                engine="fiona",
+                engine="pyogrio",
                 layer="driving_tracks",
-                mode='a',
+                mode="a",
             )
         print(
             f"Appended {len(records)} track(s) to {self.CANONICAL_GPKG_FILE}."
@@ -76,7 +116,7 @@ class DrivingLog:
             f"Backed up canonical GPKG to {self.CANONICAL_BACKUP_FILE}."
         )
 
-        
+
     def check_logfile_integrity(self):
         """Checks if number of records matches length."""
         print("Checking logfile integrity.")
@@ -114,7 +154,7 @@ class DrivingLog:
         df = pd.read_sql(query, con)
         con.close()
         return set(parse(d) for d in df['source_track_timestamp'].to_list())
-    
+
 
     def import_gpx_files(self, gpx_files):
         """Imports GPX files into the GeoPackage driving log."""
@@ -122,13 +162,13 @@ class DrivingLog:
         if len(gpx_files) == 0:
             print("No GPX file was provided.")
             return
-        
+
         # Get a set of existing source track timestamps. These will be
         # used to ensure tracks which are already imported will not be
         # imported again.
         existing_ts = self.existing_trk_timestamps()
 
-        new_gpx_tracks = [] 
+        new_gpx_tracks = []
         for f in gpx_files:
             # Process GPX file and append processed tracks to list.
             # Tracks with timestamps matching those in existing_ts will
@@ -160,7 +200,7 @@ class DrivingLog:
             ) OR (
                 (return_time_utc IS NOT NULL)
                 AND (return_time_utc NOT LIKE '{self.ISO_FORMAT_LIKE}')
-            )            
+            )
         """
         sql_update_rentals = """
             UPDATE rentals
@@ -195,7 +235,7 @@ class DrivingLog:
         else:
             shutil.copy(self.GPKG_TEMPLATE, self.CANONICAL_GPKG_FILE)
             print(f"Copied logfile {self.CANONICAL_GPKG_FILE} from template.")
-        
+
 if __name__ == '__main__':
     dl = DrivingLog()
     dl.normalize_times()
