@@ -68,8 +68,6 @@ class DrivingLog:
             )
             existing_cols = list(existing.columns)
             incoming_cols = list(gdf.columns)
-            print("Existing columns:", existing_cols)
-            print("Incoming columns:", incoming_cols)
 
             # Check that geometry column name matches.
             geom_col = gdf.geometry.name
@@ -91,6 +89,10 @@ class DrivingLog:
             for col in existing_cols:
                 if col not in gdf.columns:
                     gdf[col] = None
+                    print(
+                        f"No value was provided for column '{col}'; setting "
+                        "its value to null."
+                    )
 
             # Reorder columns to match existing schema.
             gdf = gdf[existing_cols]
