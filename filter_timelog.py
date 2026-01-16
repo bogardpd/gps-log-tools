@@ -110,7 +110,7 @@ def get_timelog_segments():
 
     # Convert to UTC.
     df['time_utc'] = df.apply(lambda x:
-        isoparse(x.time).astimezone(UTC),
+        timelog_parse_time(x.time),
         axis=1,
     )
     df = df.sort_values(by=['time_utc','status'])
@@ -148,6 +148,19 @@ def timelog_overlaps_range(timelog, time_range):
         & (timelog['start_utc'] < time_range[1])
     ]
     return len(timelog_overlap) > 0
+
+def timelog_parse_time(time_str):
+    """Parses a time string into a UTC datetime object."""
+    try:
+        return isoparse(time_str).astimezone(UTC)
+    except TypeError as e:
+        raise TypeError(
+            f"Invalid iCloud timelog format: {time_str}"
+        ) from e
+    except ValueError as e:
+        raise ValueError(
+            f"Invalid iCloud timelog format: {time_str}"
+        ) from e
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
